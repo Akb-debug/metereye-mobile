@@ -5,7 +5,6 @@ import 'package:dio/dio.dart';
 import '../config/app_config.dart';
 import '../models/user_model.dart';
 
-
 class AuthService {
   late final Dio _dio;
 
@@ -42,7 +41,8 @@ class AuthService {
           e.error is SocketException) {
         throw Exception('Impossible de joindre le serveur.');
       }
-      throw Exception(e.response?.data?['message']?.toString() ?? 'Erreur serveur');
+      throw Exception(
+          e.response?.data?['message']?.toString() ?? 'Erreur serveur');
     }
   }
 
@@ -52,6 +52,7 @@ class AuthService {
     required String email,
     required String motDePasse,
     required String telephone,
+    String role = 'PERSONNEL',
   }) async {
     try {
       await _dio.post(
@@ -62,11 +63,12 @@ class AuthService {
           'nom': nom,
           'prenom': prenom,
           'telephone': telephone,
+          'role': role,
         },
       );
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['message']?.toString() ?? 'Inscription impossible');
+      throw Exception(
+          e.response?.data?['message']?.toString() ?? 'Inscription impossible');
     }
   }
-
-  }
+}
