@@ -6,4 +6,5 @@ class AppConfig {
   static const String loginUrl = '$baseUrl/auth/login';
   static const String registerUrl = '$baseUrl/auth/register';
   static const String profileUrl = '$baseUrl/users/profile';
+  static const String compteursUrl = '$baseUrl/compteurs';
 }
