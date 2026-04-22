@@ -36,6 +36,7 @@ class AuthProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _isLoggedIn;
   String? get role => _profile?.roleName ?? _user?.role;
+  String? get token => _user?.token;
 
   Future<bool> login(String email, String motDePasse) async {
     _isLoading = true;
@@ -72,6 +73,7 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
+      // Étape 1: Inscription
       await _authService.register(
         nom: nom,
         prenom: prenom,
@@ -79,7 +81,19 @@ class AuthProvider extends ChangeNotifier {
         motDePasse: motDePasse,
         telephone: telephone,
       );
-      return await login(email, motDePasse);
+      
+      // Étape 2: Tentative de login automatique
+      try {
+        return await login(email, motDePasse);
+      } catch (loginError) {
+        // Si le login échoue mais l'inscription a réussi,
+        // on considère quand même que l'inscription est réussie
+        // pour permettre la redirection vers la création de compteur
+        _errorMessage = 'Compte créé avec succès. Veuillez vous connecter manuellement.';
+        _isLoading = false;
+        notifyListeners();
+        return true; // Retourner true pour permettre la redirection
+      }
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
       _isLoading = false;

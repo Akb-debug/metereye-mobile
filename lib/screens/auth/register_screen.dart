@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../main.dart';
@@ -7,6 +7,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/custom_input.dart';
 import '../home/home_shell.dart';
 import 'login_screen.dart';
+import '../../../features/compteur/screens/create_compteur_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -36,8 +37,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _naviguerVersAccueil() {
+    final authProvider = context.read<AuthProvider>();
+    final token = authProvider.token;
+    
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const HomeShell()),
+      MaterialPageRoute(builder: (_) => CreateCompteurScreen(token: token ?? '')),
       (route) => false,
     );
   }
@@ -49,7 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Cr�er un compte'),
+        title: const Text('Créer un compte'),
         backgroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -59,7 +63,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Cr�er votre compte', style: AppTextStyles.heading1),
+              Text('Créer votre compte', style: AppTextStyles.heading1),
               const SizedBox(height: 8),
               Text(
                 'Bienvenue sur MeterEye AI.',
@@ -86,15 +90,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 label: 'Nom',
                 icon: Icons.person_outline,
                 hint: 'Votre nom',
-                validator: (val) => val == null || val.trim().length < 2 ? 'Minimum 2 caract�res' : null,
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) return 'Le nom est obligatoire';
+                  if (val.trim().length < 2) return 'Le nom doit contenir au moins 2 caractères';
+                  if (!RegExp(r"^[a-zA-Z\s'-]+$").hasMatch(val.trim())) return 'Le nom ne peut contenir que des lettres, espaces, tirets et apostrophes';
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               CustomInput(
                 controller: prenomController,
-                label: 'Pr�nom',
+                label: 'Prénom',
                 icon: Icons.person_outline,
-                hint: 'Votre pr�nom',
-                validator: (val) => val == null || val.trim().length < 2 ? 'Minimum 2 caract�res' : null,
+                hint: 'Votre prénom',
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) return 'Le prénom est obligatoire';
+                  if (val.trim().length < 2) return 'Le prénom doit contenir au moins 2 caractères';
+                  if (!RegExp(r"^[a-zA-Z\s'-]+$").hasMatch(val.trim())) return 'Le prénom ne peut contenir que des lettres, espaces, tirets et apostrophes';
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               CustomInput(
@@ -103,16 +117,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 icon: Icons.email_outlined,
                 hint: 'Ex : email@exemple.com',
                 keyboardType: TextInputType.emailAddress,
-                validator: (val) => val == null || !val.contains('@') ? 'Email invalide' : null,
+                validator: (val) {
+                      if (val == null || val.trim().isEmpty) return 'L\'email est obligatoire';
+                      if (!RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").hasMatch(val.trim())) return 'Veuillez entrer une adresse email valide (ex: nom@domaine.com)';
+                      return null;
+                    },
               ),
               const SizedBox(height: 16),
               CustomInput(
                 controller: telephoneController,
-                label: 'T�l�phone',
+                label: 'Téléphone',
                 icon: Icons.phone_outlined,
                 hint: 'Ex : +221123456789',
                 keyboardType: TextInputType.phone,
-                validator: (val) => val == null || val.trim().length < 8 ? 'Minimum 8 chiffres' : null,
+                validator: (val) {
+                      if (val == null || val.trim().isEmpty) return 'Le numéro de téléphone est obligatoire';
+                      final phone = val.trim().replaceAll(RegExp(r'[^0-9+]'), '');
+                      if (phone.length < 8) return 'Le numéro doit contenir au moins 8 chiffres';
+                      if (phone.length > 15) return 'Le numéro ne peut pas dépasser 15 chiffres';
+                      if (!RegExp(r'^\+?[0-9]+$').hasMatch(phone)) return 'Le numéro ne peut contenir que des chiffres et éventuellement un + au début';
+                      return null;
+                    },
               ),
               const SizedBox(height: 16),
               CustomInput(
@@ -121,8 +146,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 icon: Icons.lock_outline,
                 obscureText: true,
                 showToggle: true,
-                hint: 'Minimum 6 caract�res',
-                validator: (val) => val == null || val.trim().length < 6 ? 'Minimum 6 caract�res' : null,
+                hint: 'Minimum 6 caractères',
+                validator: (val) {
+                      if (val == null || val.trim().isEmpty) return 'Le mot de passe est obligatoire';
+                      if (val.trim().length < 6) return 'Le mot de passe doit contenir au moins 6 caractères';
+                      if (val.trim().length > 50) return 'Le mot de passe ne peut pas dépasser 50 caractères';
+                      if (!RegExp(r'(?=.*[a-z])').hasMatch(val)) return 'Le mot de passe doit contenir au moins une lettre minuscule';
+                      if (!RegExp(r'(?=.*[A-Z])').hasMatch(val)) return 'Le mot de passe doit contenir au moins une lettre majuscule';
+                      if (!RegExp(r'(?=.*\d)').hasMatch(val)) return 'Le mot de passe doit contenir au moins un chiffre';
+                      return null;
+                    },
               ),
               const SizedBox(height: 16),
               CustomInput(
@@ -131,8 +164,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 icon: Icons.lock_outline,
                 obscureText: true,
                 showToggle: true,
-                hint: 'R�p�tez votre mot de passe',
-                validator: (val) => val == null || val.trim().isEmpty ? 'Veuillez confirmer le mot de passe' : null,
+                hint: 'Répétez votre mot de passe',
+                validator: (val) {
+                      if (val == null || val.trim().isEmpty) return 'Veuillez confirmer le mot de passe';
+                      if (val != passwordController.text) return 'Les mots de passe ne correspondent pas';
+                      return null;
+                    },
               ),
               const SizedBox(height: 24),
               ElevatedButton(
@@ -167,13 +204,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         height: 20,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       )
-                    : const Text('Cr�er mon compte'),
+                    : const Text('Créer mon compte'),
               ),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('D�j� un compte ?', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+                  Text('Déjà un compte ?', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
                   TextButton(
                     onPressed: () {
                       Navigator.pushReplacement(

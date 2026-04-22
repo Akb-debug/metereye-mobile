@@ -63,9 +63,15 @@ class DashboardScreen extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppTheme.mainGradient,
+        gradient: AppColors.mainGradient,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: AppTheme.cardShadow,
+        boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.06),
+          blurRadius: 12,
+          offset: const Offset(0, 2),
+        )
+      ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,7 +99,7 @@ class DashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           const Text(
-            "${AppData.creditRestant}",
+            "${AppData.creditUnites}",
             style: TextStyle(
               fontSize: 48,
               fontWeight: FontWeight.w900,
@@ -110,13 +116,13 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const CreditProgressBar(value: AppData.pourcentage),
+          const CreditProgressBar(value: AppData.creditPct),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "${(AppData.pourcentage * 100).toInt()}% restant",
+                "${(AppData.creditPct * 100).toInt()}% restant",
                 style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
               ),
               Text(
@@ -158,7 +164,7 @@ class DashboardScreen extends StatelessWidget {
           icon: Icons.account_balance_wallet_rounded,
           iconBg: Color(0xFFECFDF5),
           iconColor: Color(0xFF10B981),
-          value: "${AppData.coutEstime} FCFA",
+          value: "${AppData.creditUnites} unités",
           label: "Coût estimé",
         ),
         StatCard(
@@ -176,7 +182,7 @@ class DashboardScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
-      decoration: AppTheme.cardDecoration(),
+      decoration: AppTheme.cardDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -190,7 +196,7 @@ class DashboardScreen extends StatelessWidget {
                 maxY: 6,
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) => AppTheme.primary,
+                    getTooltipColor: (_) => AppColors.primary,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       return BarTooltipItem(
                         "${rod.toY} kWh",
@@ -210,7 +216,7 @@ class DashboardScreen extends StatelessWidget {
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
                             days[value.toInt() % days.length],
-                            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10),
+                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 10),
                           ),
                         );
                       },
@@ -223,7 +229,7 @@ class DashboardScreen extends StatelessWidget {
                       getTitlesWidget: (value, meta) {
                         return Text(
                           "${value.toInt()}",
-                          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10),
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 10),
                         );
                       },
                     ),
@@ -235,7 +241,7 @@ class DashboardScreen extends StatelessWidget {
                   show: true,
                   drawVerticalLine: false,
                   getDrawingHorizontalLine: (value) => const FlLine(
-                    color: AppTheme.border,
+                    color: AppColors.borderColor,
                     strokeWidth: 1,
                   ),
                 ),
@@ -247,7 +253,7 @@ class DashboardScreen extends StatelessWidget {
                       BarChartRodData(
                         toY: AppData.conso7j[i]['kwh'].toDouble(),
                         gradient: const LinearGradient(
-                          colors: [AppTheme.primary, AppTheme.secondary],
+                          colors: [AppColors.primary, AppColors.secondary],
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
                         ),
@@ -261,14 +267,14 @@ class DashboardScreen extends StatelessWidget {
                   horizontalLines: [
                     HorizontalLine(
                       y: 3.0,
-                      color: AppTheme.alertRed.withOpacity(0.5),
+                      color: AppColors.alertRed.withOpacity(0.5),
                       strokeWidth: 2,
                       dashArray: [5, 5],
                       label: HorizontalLineLabel(
                         show: true,
                         alignment: Alignment.topRight,
                         padding: const EdgeInsets.only(right: 5, bottom: 5),
-                        style: const TextStyle(color: AppTheme.alertRed, fontSize: 9, fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: AppColors.alertRed, fontSize: 9, fontWeight: FontWeight.bold),
                         labelResolver: (line) => 'Moy. 3.0',
                       ),
                     ),
@@ -286,7 +292,7 @@ class DashboardScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
-      decoration: AppTheme.cardDecoration(),
+      decoration: AppTheme.cardDecoration,
       child: Column(
         children: [
           Row(
@@ -297,7 +303,7 @@ class DashboardScreen extends StatelessWidget {
                 onPressed: () {},
                 child: const Text(
                   "Voir tout →",
-                  style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w700),
+                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
                 ),
               ),
             ],
