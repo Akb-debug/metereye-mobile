@@ -24,17 +24,20 @@ class CompteurResponse {
   });
 
   factory CompteurResponse.fromJson(Map<String, dynamic> json) {
+    // Vérifier si la réponse a une structure avec un champ "data"
+    final data = json['data'] ?? json;
+    
     return CompteurResponse(
-      id: json['id'],
-      reference: json['reference'] ?? '',
-      adresse: json['adresse'] ?? '',
-      typeCompteur: json['typeCompteur'] ?? '',
-      valeurActuelle: (json['valeurActuelle'] ?? 0).toDouble(),
-      proprietaireNom: json['proprietaireNom'],
-      proprietaireId: json['proprietaireId'],
-      dateInitialisation: json['dateInitialisation'],
-      actif: json['actif'] ?? true,
-      dateCreation: json['dateCreation'],
+      id: data['id'],
+      reference: data['reference'] ?? '',
+      adresse: data['adresse'] ?? '',
+      typeCompteur: data['typeCompteur'] ?? '',
+      valeurActuelle: (data['valeurActuelle'] ?? 0).toDouble(),
+      proprietaireNom: data['proprietaireNom'],
+      proprietaireId: data['proprietaireId'],
+      dateInitialisation: data['dateInitialisation'],
+      actif: data['actif'] ?? true,
+      dateCreation: data['dateCreation'],
     );
   }
 }

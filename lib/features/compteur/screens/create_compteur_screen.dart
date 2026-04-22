@@ -65,6 +65,23 @@ class _CreateCompteurScreenState extends State<CreateCompteurScreen> {
     if (!mounted) return;
 
     if (success && provider.createdCompteur != null) {
+      // Vérifier si le mode de lecture a été configuré
+      if (provider.configuredMode != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Compteur créé et mode de lecture configuré avec succès!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Compteur créé! Vous pourrez configurer le mode de lecture plus tard.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -77,7 +94,10 @@ class _CreateCompteurScreenState extends State<CreateCompteurScreen> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(provider.errorMessage ?? 'Erreur')),
+        SnackBar(
+          content: Text(provider.errorMessage ?? 'Erreur lors de la création du compteur'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -99,16 +119,25 @@ class _CreateCompteurScreenState extends State<CreateCompteurScreen> {
                   AppTextField(
                     controller: _referenceController,
                     label: 'Référence',
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Champ requis' : null,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'La référence du compteur est obligatoire';
+                      if (v.trim().length < 3) return 'La référence doit contenir au moins 3 caractères';
+                      if (v.trim().length > 50) return 'La référence ne peut pas dépasser 50 caractères';
+                      if (!RegExp(r'^[A-Z0-9-_]+$').hasMatch(v.trim())) return 'La référence ne peut contenir que des lettres majuscules, chiffres, tirets et underscores';
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
                   AppTextField(
                     controller: _adresseController,
                     label: 'Adresse',
                     maxLines: 2,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Champ requis' : null,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'L\'adresse est obligatoire';
+                      if (v.trim().length < 5) return 'L\'adresse doit contenir au moins 5 caractères';
+                      if (v.trim().length > 200) return 'L\'adresse ne peut pas dépasser 200 caractères';
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<TypeCompteur>(
@@ -136,10 +165,11 @@ class _CreateCompteurScreenState extends State<CreateCompteurScreen> {
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Champ requis';
-                      if (double.tryParse(v.trim()) == null) {
-                        return 'Valeur numérique invalide';
-                      }
+                      if (v == null || v.trim().isEmpty) return 'La valeur initiale est obligatoire';
+                      final value = double.tryParse(v.trim());
+                      if (value == null) return 'Veuillez entrer une valeur numérique valide';
+                      if (value < 0) return 'La valeur ne peut pas être négative';
+                      if (value > 999999) return 'La valeur ne peut pas dépasser 999999';
                       return null;
                     },
                   ),
@@ -169,8 +199,12 @@ class _CreateCompteurScreenState extends State<CreateCompteurScreen> {
                     controller: _commentaireController,
                     label: 'Commentaire',
                     maxLines: 3,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Champ requis' : null,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Le commentaire est obligatoire';
+                      if (v.trim().length < 5) return 'Le commentaire doit contenir au moins 5 caractères';
+                      if (v.trim().length > 500) return 'Le commentaire ne peut pas dépasser 500 caractères';
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 24),
                   PrimaryButton(

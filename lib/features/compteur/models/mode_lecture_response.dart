@@ -12,11 +12,14 @@ class ModeLectureResponse {
   });
 
   factory ModeLectureResponse.fromJson(Map<String, dynamic> json) {
+    // Vérifier si la réponse a une structure avec un champ "data"
+    final data = json['data'] ?? json;
+    
     return ModeLectureResponse(
-      message: json['message'],
-      modeLecture: json['modeLecture'],
-      commentaire: json['commentaire'],
-      statut: json['statut'],
+      message: json['message'] ?? data['message'],
+      modeLecture: data['modeLecture'],
+      commentaire: data['commentaire'],
+      statut: data['statut'],
     );
   }
 }

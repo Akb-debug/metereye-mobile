@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/mode_lecture.dart';
+import '../../../screens/dashboard_screen.dart';
 
 class CompteurNextStepScreen extends StatelessWidget {
   final ModeLecture modeLecture;
@@ -57,7 +58,11 @@ class CompteurNextStepScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.popUntil(context, (route) => route.isFirst);
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                      (route) => false,
+                    );
                   },
                   child: const Text('Continuer'),
                 ),

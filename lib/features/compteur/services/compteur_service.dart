@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+
 import '../../../config/app_config.dart';
 import '../models/compteur_response.dart';
 import '../models/create_compteur_request.dart';
@@ -20,17 +22,27 @@ class CompteurService {
     required String token,
     required CreateCompteurRequest request,
   }) async {
-    final response = await client.post(
-      Uri.parse(AppConfig.compteursUrl),
-      headers: _headers(token),
-      body: jsonEncode(request.toJson()),
-    );
+    try {
+      final response = await client.post(
+        Uri.parse(AppConfig.compteursUrl),
+        headers: _headers(token),
+        body: jsonEncode(request.toJson()),
+      );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return CompteurResponse.fromJson(jsonDecode(response.body));
+      debugPrint('CREATE COMPTEUR STATUS: ${response.statusCode}');
+      debugPrint('CREATE COMPTEUR BODY: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return CompteurResponse.fromJson(jsonDecode(response.body));
+      }
+
+      throw Exception(_extractMessage(response));
+    } on http.ClientException {
+      throw Exception("Impossible de contacter le serveur. Vérifie ta connexion.");
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception("Une erreur inattendue est survenue lors de la création du compteur.");
     }
-
-    throw Exception(_extractMessage(response.body));
   }
 
   Future<ModeLectureResponse> configurerModeLecture({
@@ -38,25 +50,67 @@ class CompteurService {
     required int compteurId,
     required ConfigureModeLectureRequest request,
   }) async {
-    final response = await client.post(
-      Uri.parse('${AppConfig.compteursUrl}/$compteurId/mode-lecture'),
-      headers: _headers(token),
-      body: jsonEncode(request.toJson()),
-    );
+    try {
+      final response = await client.post(
+        Uri.parse('${AppConfig.compteursUrl}/$compteurId/mode-lecture'),
+        headers: _headers(token),
+        body: jsonEncode(request.toJson()),
+      );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return ModeLectureResponse.fromJson(jsonDecode(response.body));
+      debugPrint('MODE LECTURE STATUS: ${response.statusCode}');
+      debugPrint('MODE LECTURE BODY: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return ModeLectureResponse.fromJson(jsonDecode(response.body));
+      }
+
+      throw Exception(_extractMessage(response));
+    } on http.ClientException {
+      throw Exception("Impossible de contacter le serveur. Vérifie ta connexion.");
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception("Une erreur inattendue est survenue lors de la configuration du mode de lecture.");
     }
-
-    throw Exception(_extractMessage(response.body));
   }
 
-  String _extractMessage(String body) {
+  String _extractMessage(http.Response response) {
     try {
-      final json = jsonDecode(body);
-      return json['message'] ?? 'Une erreur est survenue';
+      final data = jsonDecode(response.body);
+
+      if (data is Map<String, dynamic>) {
+        if (data['message'] != null &&
+            data['message'].toString().trim().isNotEmpty) {
+          return data['message'].toString();
+        }
+
+        if (data['error'] != null &&
+            data['error'].toString().trim().isNotEmpty) {
+          return data['error'].toString();
+        }
+
+        if (data['errors'] != null) {
+          return data['errors'].toString();
+        }
+      }
     } catch (_) {
-      return 'Une erreur est survenue';
+      // ignore json parse error
+    }
+
+    switch (response.statusCode) {
+      case 400:
+        return "Données invalides. Vérifie les champs saisis.";
+      case 401:
+        return "Session expirée. Veuillez vous reconnecter.";
+      case 403:
+        return "Accès refusé.";
+      case 404:
+        return "Ressource introuvable.";
+      case 409:
+        return "Conflit détecté. Cette référence existe peut-être déjà.";
+      case 500:
+        return "Erreur serveur. Réessaie plus tard.";
+      default:
+        return "Une erreur inattendue est survenue.";
     }
   }
 }
