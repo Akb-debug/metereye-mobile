@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../main.dart';
+import '../../providers/auth_provider.dart';
+import '../auth/welcome_screen.dart';
 
 class ProfilScreen extends StatefulWidget {
   const ProfilScreen({super.key});
@@ -254,7 +258,16 @@ class _ProfilScreenState extends State<ProfilScreen> with SingleTickerProviderSt
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () async {
+          final navigator = Navigator.of(context);
+          final appState = context.read<AppStateProvider>();
+          await context.read<AuthProvider>().logout();
+          appState.logout();
+          navigator.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+            (route) => false,
+          );
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFEE2E2),
           foregroundColor: const Color(0xFFEF4444),

@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 import 'providers/auth_provider.dart';
-import 'providers/meter_provider.dart';
 
 // Nouveau module compteur
 import 'features/compteur/providers/compteur_provider.dart';
@@ -21,9 +20,6 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AppStateProvider()),
         ChangeNotifierProvider.value(value: authProvider),
-
-        // Ancien provider existant
-        ChangeNotifierProvider(create: (_) => MeterProvider()),
 
         // Nouveau provider feature-first pour Sprint 2
         ChangeNotifierProvider(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/mode_lecture.dart';
-import '../../../screens/dashboard_screen.dart';
+import '../../../screens/home/home_shell.dart';
 
 class CompteurNextStepScreen extends StatelessWidget {
   final ModeLecture modeLecture;
@@ -60,7 +60,7 @@ class CompteurNextStepScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                      MaterialPageRoute(builder: (_) => const HomeShell()),
                       (route) => false,
                     );
                   },

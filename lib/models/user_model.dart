@@ -24,7 +24,7 @@ class UserModel {
       token: json['token']?.toString() ?? '',
       type: json['type']?.toString() ?? 'Bearer',
       role: user['role']?.toString() ?? 'PERSONNEL',
-      nomComplet: user['email']?.toString() ?? '',
+      nomComplet: user['nomComplet']?.toString() ?? user['nom']?.toString() ?? '',
       userId: (user['id'] as num?)?.toInt() ?? 0,
       email: user['email']?.toString() ?? '',
     );
