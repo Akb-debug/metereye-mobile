@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_theme.dart';
 import '../../models/app_data.dart';
 import '../../widgets/credit_bar.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/alerte_item.dart';
 import '../../widgets/section_title.dart';
+import '../../features/Releve/screens/releve_manuel_screen.dart';
+import '../../features/compteur/providers/compteur_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -14,6 +18,49 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          final token = context.read<AuthProvider>().token ?? '';
+          final compteur = context.read<CompteurProvider>().createdCompteur;
+
+          if (token.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Session invalide. Déconnectez-vous et reconnectez-vous.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+
+          if (compteur == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Aucun compteur trouvé. Créez d\'abord un compteur.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
+
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ReleveManuelScreen(
+                compteurId: compteur.id,
+                compteurReference: compteur.reference,
+                valeurPrecedente: null,
+              ),
+            ),
+          );
+        },
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_chart_rounded),
+        label: const Text(
+          'Ajouter un relevé',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+      ),
       appBar: AppBar(
         leading: Container(
           margin: const EdgeInsets.all(8),

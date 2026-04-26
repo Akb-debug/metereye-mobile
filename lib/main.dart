@@ -9,6 +9,10 @@ import 'providers/auth_provider.dart';
 import 'features/compteur/providers/compteur_provider.dart';
 import 'features/compteur/services/compteur_service.dart';
 
+// Module relevé
+import 'features/Releve/providers/releve_providers.dart';
+import 'features/Releve/services/releve_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -21,10 +25,14 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AppStateProvider()),
         ChangeNotifierProvider.value(value: authProvider),
 
-        // Nouveau provider feature-first pour Sprint 2
         ChangeNotifierProvider(
           create: (_) => CompteurProvider(
             service: CompteurService(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ReleveProvider(
+            service: ReleveService(),
           ),
         ),
       ],
