@@ -30,15 +30,17 @@ class ReadingModel {
 
     return ReadingModel(
       id: (json['id'] as num?)?.toInt() ?? 0,
-      valeur: (json['valeur'] as num?)?.toDouble() ?? 0.0,
+      valeur: ((json['valeur'] ?? json['value']) as num?)?.toDouble() ?? 0.0,
       dateTime: DateTime.tryParse(json['dateTime']?.toString() ?? '') ?? DateTime.now(),
-      consommationCalculee: (json['consommationCalculee'] as num?)?.toDouble(),
+      consommationCalculee: ((json['consommationCalculee'] ?? json['consumption']) as num?)?.toDouble(),
       source: json['source']?.toString() ?? 'MANUEL',
       statut: json['statut']?.toString() ?? 'VALIDE',
-      commentaire: json['commentaire']?.toString(),
+      commentaire: (json['commentaire'] ?? json['comment'])?.toString(),
       imageUrl: json['imageUrl']?.toString(),
-      compteurId: (compteur['id'] as num?)?.toInt() ?? 0,
-      compteurReference: compteur['reference']?.toString() ?? '',
+      compteurId: (compteur['id'] as num?)?.toInt() ??
+          (json['meterId'] as num?)?.toInt() ?? 0,
+      compteurReference: compteur['reference']?.toString() ??
+          json['meterReference']?.toString() ?? '',
     );
   }
 
@@ -62,4 +64,20 @@ class ReadingModel {
   double? get valeurOcr => null;
   double? get confianceOcr => null;
   String get formattedConfianceOcr => 'N/A';
+
+  /// Label court pour l'axe X du graphe (ex. "28/04")
+  String get dateLabel =>
+      '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}';
+
+  /// Source traduite en français pour l'affichage
+  String get sourceLabel {
+    switch (source.toUpperCase()) {
+      case 'ESP32_CAM':
+        return 'Lecture automatique';
+      case 'SENSOR':
+        return 'Capteur PZEM';
+      default:
+        return 'Saisie manuelle';
+    }
+  }
 }

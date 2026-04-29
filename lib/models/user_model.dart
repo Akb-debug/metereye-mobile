@@ -16,17 +16,29 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    final user = json['user'] is Map<String, dynamic>
+    final nested = json['user'] is Map<String, dynamic>
         ? json['user'] as Map<String, dynamic>
         : <String, dynamic>{};
+
+    String str(String key) =>
+        json[key]?.toString().trim().isNotEmpty == true
+            ? json[key].toString().trim()
+            : nested[key]?.toString().trim() ?? '';
+
+    final nomComplet = str('nomComplet').isNotEmpty
+        ? str('nomComplet')
+        : [str('prenom'), str('nom')]
+            .where((v) => v.isNotEmpty)
+            .join(' ');
 
     return UserModel(
       token: json['token']?.toString() ?? '',
       type: json['type']?.toString() ?? 'Bearer',
-      role: user['role']?.toString() ?? 'PERSONNEL',
-      nomComplet: user['nomComplet']?.toString() ?? user['nom']?.toString() ?? '',
-      userId: (user['id'] as num?)?.toInt() ?? 0,
-      email: user['email']?.toString() ?? '',
+      role: str('role').isNotEmpty ? str('role') : 'PERSONNEL',
+      nomComplet: nomComplet,
+      userId: (json['userId'] as num?)?.toInt() ??
+          (nested['id'] as num?)?.toInt() ?? 0,
+      email: str('email'),
     );
   }
 

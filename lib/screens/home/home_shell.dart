@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../features/compteur/providers/compteur_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import 'dashboard_screen.dart';
 import 'historique_screen.dart';
@@ -14,6 +17,17 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final token = context.read<AuthProvider>().token ?? '';
+      if (token.isNotEmpty) {
+        context.read<CompteurProvider>().chargerMesCompteurs(token: token);
+      }
+    });
+  }
 
   final List<Widget> _screens = const [
     DashboardScreen(),

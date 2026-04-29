@@ -123,7 +123,7 @@ class _ProfilScreenState extends State<ProfilScreen> with SingleTickerProviderSt
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Mon Module IoT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const Text("Mon Module IoT", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: AnimatedBuilder(
@@ -179,7 +179,7 @@ class _ProfilScreenState extends State<ProfilScreen> with SingleTickerProviderSt
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Infos Compteur", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const Text("Infos Compteur", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           _buildInfoRow(Icons.electric_meter_rounded, "Type", "CashPower Prépayé"),
           _buildInfoRow(Icons.tag_rounded, "Numéro", "CP-2024-001"),
           _buildInfoRow(Icons.location_on_rounded, "Quartier", "Bè-Kpota"),
@@ -206,7 +206,7 @@ class _ProfilScreenState extends State<ProfilScreen> with SingleTickerProviderSt
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Paramètres des alertes", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const Text("Paramètres des alertes", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           _buildSwitchTile("creditFaible", "Alerte crédit faible (< 200 unités)"),
           _buildSwitchTile("coupureIminente", "Alerte coupure imminente"),
           _buildSwitchTile("rapportHebdo", "Rapport hebdomadaire"),
@@ -221,8 +221,8 @@ class _ProfilScreenState extends State<ProfilScreen> with SingleTickerProviderSt
     return SwitchListTile(
       value: settings[key] ?? false,
       onChanged: (val) => setState(() => settings[key] = val),
-      title: Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF1E293B))),
-      activeColor: const Color(0xFF2563EB),
+      title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+      activeThumbColor: const Color(0xFF2563EB),
       contentPadding: EdgeInsets.zero,
       dense: true,
     );
@@ -236,19 +236,19 @@ class _ProfilScreenState extends State<ProfilScreen> with SingleTickerProviderSt
         color: const Color(0xFFEFF6FF),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("MeterEye AI", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF2563EB))),
-          Text("Version 1.0.0 Beta", style: TextStyle(fontSize: 11, color: const Color(0xFF64748B))),
-          const SizedBox(height: 12),
+          Text("MeterEye AI", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF2563EB))),
+          Text("Version 1.0.0 Beta", style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+          SizedBox(height: 12),
           Text(
             "MeterEye AI est une solution innovante permettant de suivre en temps réel sa consommation électrique grâce à la vision par ordinateur.",
-            style: TextStyle(fontSize: 12, color: const Color(0xFF64748B), height: 1.5),
+            style: TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.5),
             textAlign: TextAlign.justify,
           ),
-          const SizedBox(height: 12),
-          Text("metereyeai.tg", style: TextStyle(color: const Color(0xFF2563EB), fontWeight: FontWeight.bold, decoration: TextDecoration.underline, fontSize: 13)),
+          SizedBox(height: 12),
+          Text("metereyeai.tg", style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold, decoration: TextDecoration.underline, fontSize: 13)),
         ],
       ),
     );
@@ -285,9 +285,9 @@ class _ProfilScreenState extends State<ProfilScreen> with SingleTickerProviderSt
         children: [
           Icon(icon, size: 20, color: const Color(0xFF64748B)),
           const SizedBox(width: 12),
-          Text(label, style: TextStyle(fontSize: 13, color: const Color(0xFF64748B))),
+          Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
           const Spacer(),
-          Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF1E293B))),
+          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
         ],
       ),
     );

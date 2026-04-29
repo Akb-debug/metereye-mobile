@@ -5,7 +5,6 @@ import '../../main.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/custom_input.dart';
-import '../home/home_shell.dart';
 import 'login_screen.dart';
 import '../../../features/compteur/screens/create_compteur_screen.dart';
 

@@ -33,18 +33,10 @@ class ReleveProvider extends ChangeNotifier {
 
   Future<bool> soumettreReleve({
     required String token,
-    required int compteurId,
-    required double valeur,
-    double? valeurPrecedente,
-    String? commentaire,
+    required int meterId,
+    required double value,
+    String? comment,
   }) async {
-    if (valeurPrecedente != null && valeur < valeurPrecedente) {
-      errorMessage =
-          'La valeur doit être supérieure à la dernière lecture ($valeurPrecedente).';
-      notifyListeners();
-      return false;
-    }
-
     try {
       isLoading = true;
       errorMessage = null;
@@ -53,9 +45,9 @@ class ReleveProvider extends ChangeNotifier {
 
       final releve = await service.createManualReleve(
         token: token,
-        compteurId: compteurId,
-        valeur: valeur,
-        commentaire: commentaire,
+        meterId: meterId,
+        value: value,
+        comment: comment,
       );
 
       releves.insert(0, releve);

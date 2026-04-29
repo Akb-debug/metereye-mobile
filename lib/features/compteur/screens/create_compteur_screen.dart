@@ -141,7 +141,7 @@ class _CreateCompteurScreenState extends State<CreateCompteurScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<TypeCompteur>(
-                    value: _selectedType,
+                    initialValue: _selectedType,
                     decoration: const InputDecoration(
                       labelText: 'Type de compteur',
                       border: OutlineInputBorder(),
@@ -175,7 +175,7 @@ class _CreateCompteurScreenState extends State<CreateCompteurScreen> {
                   ),
                   const SizedBox(height: 24),
                   DropdownButtonFormField<ModeLecture>(
-                    value: _selectedMode,
+                    initialValue: _selectedMode,
                     decoration: const InputDecoration(
                       labelText: 'Mode de lecture',
                       border: OutlineInputBorder(),

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,10 +43,13 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final user = await _authService.login(email, motDePasse);
-      final profile = UserProfile(id: user.userId.toString(), name: "Jean Doe", email: user.email, roleName: user.role); // Placeholder
+      final profile = UserProfile(id: user.userId.toString(), name: user.nomComplet, email: user.email, roleName: user.role);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', user.token);
       await prefs.setString('role', profile.roleName);
+      await prefs.setString('nomComplet', user.nomComplet);
+      await prefs.setString('email', user.email);
+      await prefs.setString('userId', user.userId.toString());
       _user = user;
       _profile = profile;
       _isLoggedIn = true;
@@ -107,14 +109,18 @@ class AuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
       if (token != null && token.isNotEmpty) {
-        final profile = UserProfile(id: "1", name: "Jean Doe", email: "jean.doe@example.com", roleName: "CASHPOWER"); // Placeholder
+        final nomComplet = prefs.getString('nomComplet') ?? '';
+        final email = prefs.getString('email') ?? '';
+        final roleName = prefs.getString('role') ?? 'CASHPOWER';
+        final userId = prefs.getString('userId') ?? '0';
+        final profile = UserProfile(id: userId, name: nomComplet, email: email, roleName: roleName);
         _profile = profile;
         _user = UserModel(
           token: token,
           type: 'Bearer',
           role: profile.roleName,
           nomComplet: profile.name,
-          userId: int.parse(profile.id),
+          userId: int.tryParse(profile.id) ?? 0,
           email: profile.email,
         );
         _isLoggedIn = true;
@@ -134,6 +140,9 @@ class AuthProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
     await prefs.remove('role');
+    await prefs.remove('nomComplet');
+    await prefs.remove('email');
+    await prefs.remove('userId');
     _user = null;
     _profile = null;
     _isLoggedIn = false;

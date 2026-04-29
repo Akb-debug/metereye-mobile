@@ -53,19 +53,19 @@ class ReleveService {
     debugPrint('──────────────────────────────────────');
   }
 
-  /// POST /api/readings/manual  (ou AppConfig.relevesUrl)
+  /// POST /api/readings/manual
   Future<Releve> createManualReleve({
     required String token,
-    required int compteurId,
-    required double valeur,
-    String? commentaire,
+    required int meterId,
+    required double value,
+    String? comment,
   }) async {
     const url = AppConfig.relevesUrl;
     final headers = _headers(token);
     final bodyMap = {
-      'compteurId': compteurId,
-      'valeur': valeur,
-      if (commentaire != null && commentaire.isNotEmpty) 'commentaire': commentaire,
+      'meterId': meterId,
+      'value': value,
+      if (comment != null && comment.isNotEmpty) 'comment': comment,
     };
     final bodyJson = jsonEncode(bodyMap);
 

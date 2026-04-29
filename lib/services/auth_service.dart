@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../config/app_config.dart';
 import '../models/user_model.dart';
@@ -31,6 +32,7 @@ class AuthService {
           'motDePasse': motDePasse,
         },
       );
+      debugPrint('LOGIN RESPONSE: ${response.data}');
       return UserModel.fromJson(response.data);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {

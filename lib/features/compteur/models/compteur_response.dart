@@ -9,6 +9,7 @@ class CompteurResponse {
   final String? dateInitialisation;
   final bool actif;
   final String? dateCreation;
+  final String? modeLectureConfigure;
 
   CompteurResponse({
     required this.id,
@@ -21,12 +22,14 @@ class CompteurResponse {
     this.dateInitialisation,
     required this.actif,
     this.dateCreation,
+    this.modeLectureConfigure,
   });
 
+  bool get isManualMode => modeLectureConfigure?.toUpperCase() == 'MANUAL';
+
   factory CompteurResponse.fromJson(Map<String, dynamic> json) {
-    // Vérifier si la réponse a une structure avec un champ "data"
     final data = json['data'] ?? json;
-    
+
     return CompteurResponse(
       id: data['id'],
       reference: data['reference'] ?? '',
@@ -38,6 +41,7 @@ class CompteurResponse {
       dateInitialisation: data['dateInitialisation'],
       actif: data['actif'] ?? true,
       dateCreation: data['dateCreation'],
+      modeLectureConfigure: data['modeLectureConfigure'],
     );
   }
 }

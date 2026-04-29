@@ -13,10 +13,32 @@ class CompteurProvider extends ChangeNotifier {
   CompteurProvider({required this.service});
 
   bool isLoading = false;
+  bool isLoadingCompteurs = false;
   String? errorMessage;
+  String? errorCompteurs;
 
   CompteurResponse? createdCompteur;
   ModeLectureResponse? configuredMode;
+  List<CompteurResponse> mesCompteurs = [];
+
+  Future<void> chargerMesCompteurs({required String token}) async {
+    if (isLoadingCompteurs) return;
+    isLoadingCompteurs = true;
+    notifyListeners();
+
+    try {
+      errorCompteurs = null;
+      final liste = await service.getMesCompteurs(token: token);
+      debugPrint('chargerMesCompteurs: ${liste.length} compteur(s) reçu(s)');
+      mesCompteurs = liste;
+    } catch (e) {
+      errorCompteurs = e.toString().replaceFirst('Exception: ', '');
+      debugPrint('chargerMesCompteurs erreur: $e');
+    } finally {
+      isLoadingCompteurs = false;
+      notifyListeners();
+    }
+  }
 
   Future<bool> createCompteurAndConfigureMode({
     required String token,

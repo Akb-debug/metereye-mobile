@@ -15,8 +15,83 @@ class CompteurService {
 
   Map<String, String> _headers(String token) => {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       };
+
+  Future<List<CompteurResponse>> getMesCompteurs({
+    required String token,
+  }) async {
+    try {
+      final response = await client.get(
+        Uri.parse(AppConfig.compteursUrl),
+        headers: _headers(token),
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        debugPrint('getMesCompteurs type=${decoded.runtimeType}');
+        debugPrint('getMesCompteurs body=${response.body}');
+
+        List<dynamic> list;
+        if (decoded is List) {
+          list = decoded;
+        } else if (decoded is Map) {
+          // Cherche la première clé qui contient une List
+          final mapKeys = decoded.keys.toList();
+          debugPrint('getMesCompteurs keys=$mapKeys');
+          final listKey = mapKeys.firstWhere(
+            (k) => decoded[k] is List,
+            orElse: () => '',
+          );
+          if (listKey.isNotEmpty) {
+            list = decoded[listKey] as List<dynamic>;
+          } else {
+            throw Exception('Clés reçues : $mapKeys');
+          }
+        } else {
+          throw Exception('Format de réponse inattendu : ${decoded.runtimeType}');
+        }
+
+        return list
+            .map((e) => CompteurResponse.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+
+      throw Exception(_extractMessage(response));
+    } on http.ClientException {
+      throw Exception("Impossible de contacter le serveur. Vérifie ta connexion.");
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception("Erreur inattendue lors du chargement des compteurs : $e");
+    }
+  }
+
+  /// GET /api/compteurs/{id}/statut-configuration
+  /// Retourne le mode de lecture configuré pour un compteur ('MANUAL', 'ESP32_CAM', 'SENSOR')
+  Future<String?> getModeLecture({
+    required String token,
+    required int compteurId,
+  }) async {
+    try {
+      final response = await client.get(
+        Uri.parse('${AppConfig.compteursUrl}/$compteurId/statut-configuration'),
+        headers: _headers(token),
+      );
+
+      debugPrint('── statut-configuration[$compteurId] status=${response.statusCode} body=${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        // Le champ peut s'appeler modeLecture ou modeLectureConfigure selon le backend
+        return (data['modeLecture'] ?? data['modeLectureConfigure'])?.toString();
+      }
+      return null;
+    } catch (e) {
+      debugPrint('── getModeLecture erreur: $e');
+      return null;
+    }
+  }
 
   Future<CompteurResponse> createCompteur({
     required String token,

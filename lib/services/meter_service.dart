@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -45,13 +45,13 @@ class MeterService {
 
     switch (response.statusCode) {
       case 401:
-        return Exception('Session expirée. Veuillez vous reconnecter.');
+        return Exception('Session expirï¿½e. Veuillez vous reconnecter.');
       case 403:
-        return Exception('Accès non autorisé.');
+        return Exception('Accï¿½s non autorisï¿½.');
       case 404:
-        return Exception('Ressource non trouvée.');
+        return Exception('Ressource non trouvï¿½e.');
       case 409:
-        return Exception('Conflit métier détecté.');
+        return Exception('Conflit mï¿½tier dï¿½tectï¿½.');
       default:
         return Exception('Erreur HTTP ${response.statusCode}.');
     }
@@ -61,8 +61,67 @@ class MeterService {
     final headers = await _getHeaders();
     final response = await http.get(Uri.parse(_compteursUrl), headers: headers);
     if (response.statusCode == 200) {
-      final List<dynamic> jsonData = json.decode(response.body);
-      return jsonData.map((json) => MeterModel.fromJson(json)).toList();
+      final decoded = json.decode(response.body);
+      // GÃ¨re rÃ©ponse wrappÃ©e {"status":200,"data":[...]} et liste directe
+      final List<dynamic> jsonData = decoded is List
+          ? decoded
+          : (decoded['data'] ?? decoded['content'] ?? []) as List<dynamic>;
+      return jsonData.map((e) => MeterModel.fromJson(e)).toList();
+    }
+    throw _handleError(response);
+  }
+
+  /// GET /api/compteurs/{id}/stats
+  Future<ConsumptionStatsModel> getCompteurStats(int compteurId) async {
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$_compteursUrl/$compteurId/stats'),
+      headers: headers,
+    );
+    if (response.statusCode == 200) {
+      final decoded = json.decode(response.body);
+      final data = decoded is Map && decoded.containsKey('data')
+          ? decoded['data'] as Map<String, dynamic>
+          : decoded as Map<String, dynamic>;
+      return ConsumptionStatsModel.fromJson(data);
+    }
+    throw _handleError(response);
+  }
+
+  /// GET /api/readings/meters/{meterId}/latest
+  Future<ReadingModel?> getLatestReading(int meterId) async {
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$_readingsUrl/meters/$meterId/latest'),
+      headers: headers,
+    );
+    if (response.statusCode == 200) {
+      final body = response.body.trim();
+      if (body.isEmpty || body == 'null') return null;
+      final decoded = json.decode(body);
+      debugPrint('LATEST READING RESPONSE: $decoded');
+      final data = decoded is Map && decoded.containsKey('data') && decoded['data'] != null
+          ? decoded['data'] as Map<String, dynamic>
+          : decoded as Map<String, dynamic>;
+      return ReadingModel.fromJson(data);
+    }
+    if (response.statusCode == 404) return null;
+    throw _handleError(response);
+  }
+
+  /// GET /api/readings/meters/{meterId}?page=0&size=20
+  Future<PaginatedReadingsResponse> getReadingsByMeter(
+    int meterId, {
+    int page = 0,
+    int size = 50,
+  }) async {
+    final headers = await _getHeaders();
+    final uri = Uri.parse('$_readingsUrl/meters/$meterId').replace(
+      queryParameters: {'page': '$page', 'size': '$size'},
+    );
+    final response = await http.get(uri, headers: headers);
+    if (response.statusCode == 200) {
+      return PaginatedReadingsResponse.fromJson(json.decode(response.body));
     }
     throw _handleError(response);
   }

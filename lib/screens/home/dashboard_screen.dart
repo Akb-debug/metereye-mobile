@@ -1,161 +1,191 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
+
+import '../../providers/auth_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../models/app_data.dart';
 import '../../widgets/credit_bar.dart';
 import '../../widgets/stat_chip.dart';
-import '../../widgets/alerte_item.dart';
 import '../../widgets/section_title.dart';
 import '../../features/Releve/screens/releve_manuel_screen.dart';
-import '../../features/compteur/providers/compteur_provider.dart';
-import '../../providers/auth_provider.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DashboardProvider>().loadDashboard();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          final token = context.read<AuthProvider>().token ?? '';
-          final compteur = context.read<CompteurProvider>().createdCompteur;
+    return Consumer<DashboardProvider>(
+      builder: (context, dash, _) {
+        final nomComplet = context.read<AuthProvider>().user?.nomComplet ?? '';
+        final userName = nomComplet.trim().isNotEmpty ? nomComplet.trim() : 'vous';
 
-          if (token.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Session invalide. Déconnectez-vous et reconnectez-vous.'),
-                backgroundColor: Colors.red,
-              ),
-            );
-            return;
-          }
-
-          if (compteur == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Aucun compteur trouvé. Créez d\'abord un compteur.'),
-                backgroundColor: Colors.orange,
-              ),
-            );
-            return;
-          }
-
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ReleveManuelScreen(
-                compteurId: compteur.id,
-                compteurReference: compteur.reference,
-                valeurPrecedente: null,
-              ),
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ReleveManuelScreen()),
             ),
-          );
-        },
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_chart_rounded),
-        label: const Text(
-          'Ajouter un relevé',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-      ),
-      appBar: AppBar(
-        leading: Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            shape: BoxShape.circle,
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            icon: const Icon(Icons.add_chart_rounded),
+            label: const Text(
+              'Ajouter un relevé',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
-          child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 20),
-        ),
-        title: Text(
-          "MeterEye AI",
-          style: AppTextStyles.heading1.copyWith(color: Colors.white, fontSize: 18),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Lecture du compteur en cours...")),
-              );
-            },
+          appBar: AppBar(
+            leading: Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child:
+                  const Icon(Icons.bolt_rounded, color: Colors.white, size: 20),
+            ),
+            title: Text(
+              'MeterEye AI',
+              style: AppTextStyles.heading1
+                  .copyWith(color: Colors.white, fontSize: 18),
+            ),
+            actions: [
+              IconButton(
+                icon: dash.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded, color: Colors.white),
+                onPressed:
+                    dash.isLoading ? null : () => dash.loadDashboard(),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
+          body: dash.error != null && dash.compteurActif == null
+              ? _buildError(dash)
+              : SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _buildHeader(dash, userName),
+                      Padding(
+                        padding:
+                            const EdgeInsets.only(left: 16, right: 16, top: 12),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                StatChip(
+                                  icon: Icons.bolt_rounded,
+                                  iconBg: const Color(0xFFEFF6FF),
+                                  iconColor: AppColors.primary,
+                                  value: dash.isLoading && dash.stats == null
+                                      ? '…'
+                                      : dash.consoAujourd,
+                                  label: "Aujourd'hui",
+                                ),
+                                const SizedBox(width: 12),
+                                StatChip(
+                                  icon: Icons.calendar_today_rounded,
+                                  iconBg: const Color(0xFFECFDF5),
+                                  iconColor: AppColors.secondary,
+                                  value: dash.isLoading && dash.stats == null
+                                      ? '…'
+                                      : dash.consoMois,
+                                  label: 'Ce mois',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                StatChip(
+                                  icon: Icons.trending_down_rounded,
+                                  iconBg: const Color(0xFFFFFBEB),
+                                  iconColor: AppColors.alertOrange,
+                                  value: dash.isLoading && dash.stats == null
+                                      ? '…'
+                                      : dash.moyJournaliere,
+                                  label: 'Moy. journalière',
+                                ),
+                                const SizedBox(width: 12),
+                                StatChip(
+                                  icon: Icons.access_time_rounded,
+                                  iconBg: const Color(0xFFF3E8FF),
+                                  iconColor: Colors.purple.shade600,
+                                  value: dash.isLoading && dash.stats == null
+                                      ? '…'
+                                      : dash.dateFinEstimee,
+                                  label: 'Fin estimée',
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      _buildConsumptionChart(dash),
+                      _buildDerniereLeture(dash),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+        );
+      },
+    );
+  }
+
+  Widget _buildError(DashboardProvider dash) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // ── EN-TÊTE GRADIENT ────────────────────────────────────────────────
-            _buildHeader(),
-
-            // ── CARTES STATS ────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      const StatChip(
-                        icon: Icons.bolt_rounded,
-                        iconBg: Color(0xFFEFF6FF),
-                        iconColor: AppColors.primary,
-                        value: "${AppData.consoAujourd} kWh",
-                        label: "Aujourd'hui",
-                      ),
-                      const SizedBox(width: 12),
-                      const StatChip(
-                        icon: Icons.calendar_today_rounded,
-                        iconBg: Color(0xFFECFDF5),
-                        iconColor: AppColors.secondary,
-                        value: "${AppData.consoMois} kWh",
-                        label: "Ce mois",
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      StatChip(
-                        icon: Icons.trending_down_rounded,
-                        iconBg: const Color(0xFFFFFBEB),
-                        iconColor: AppColors.alertOrange,
-                        value: "${AppData.moyJournaliere.toInt()} u/j",
-                        label: "Moy. journalière",
-                      ),
-                      const SizedBox(width: 12),
-                      StatChip(
-                        icon: Icons.access_time_rounded,
-                        iconBg: const Color(0xFFF3E8FF),
-                        iconColor: Colors.purple.shade600,
-                        value: "28 Fév",
-                        label: "Fin estimée",
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            Icon(Icons.cloud_off_rounded,
+                size: 56, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text(
+              dash.error ?? 'Une erreur est survenue.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body
+                  .copyWith(color: AppColors.textSecondary),
             ),
-
-            // ── GRAPHE CONSOMMATION ─────────────────────────────────────────────
-            _buildConsumptionChart(),
-
-            // ── ALERTES RÉCENTES ────────────────────────────────────────────────
-            _buildRecentAlerts(context),
-            
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () => dash.loadDashboard(),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Réessayer'),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(DashboardProvider dash, String userName) {
+    final prenom = userName.split(' ').first;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.only(top: 100, left: 20, right: 20, bottom: 32),
+      padding:
+          const EdgeInsets.only(top: 100, left: 20, right: 20, bottom: 32),
       decoration: const BoxDecoration(
         gradient: AppColors.mainGradient,
         borderRadius: BorderRadius.only(
@@ -166,11 +196,16 @@ class DashboardScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Bonjour, Koffi 👋", style: AppTextStyles.heading1.copyWith(color: Colors.white, fontSize: 22)),
+          Text(
+            'Bonjour, $prenom 👋',
+            style: AppTextStyles.heading1
+                .copyWith(color: Colors.white, fontSize: 22),
+          ),
           const SizedBox(height: 2),
           Text(
-            "${AppData.numCompteur} · Dernière lecture : 09:47",
-            style: AppTextStyles.caption.copyWith(color: Colors.white.withOpacity(0.8), fontSize: 12),
+            '${dash.numCompteur} · Dernière lecture : ${dash.derniereLeture}',
+            style: AppTextStyles.caption.copyWith(
+                color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
           ),
           const SizedBox(height: 24),
           Row(
@@ -179,13 +214,26 @@ class DashboardScreen extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  dash.isLoading && dash.compteurActif == null
+                      ? const SizedBox(
+                          width: 120,
+                          height: 52,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2.5),
+                          ),
+                        )
+                      : Text(
+                          dash.creditUnites,
+                          style: AppTextStyles.heading1.copyWith(
+                              fontSize: 48,
+                              color: Colors.white,
+                              letterSpacing: -1),
+                        ),
                   Text(
-                    "${AppData.creditUnites}",
-                    style: AppTextStyles.heading1.copyWith(fontSize: 48, color: Colors.white, letterSpacing: -1),
-                  ),
-                  Text(
-                    "unités restantes",
-                    style: AppTextStyles.body.copyWith(color: Colors.white.withOpacity(0.85), fontSize: 14),
+                    'unités restantes',
+                    style: AppTextStyles.body.copyWith(
+                        color: Colors.white.withValues(alpha: 0.85), fontSize: 14),
                   ),
                 ],
               ),
@@ -193,25 +241,29 @@ class DashboardScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    "≈ ${AppData.joursRestants} jours",
-                    style: AppTextStyles.heading2.copyWith(color: Colors.white, fontSize: 22),
+                    '≈ ${dash.joursRestants} jours',
+                    style: AppTextStyles.heading2
+                        .copyWith(color: Colors.white, fontSize: 22),
                   ),
                   Text(
-                    "avant coupure",
-                    style: AppTextStyles.caption.copyWith(color: Colors.white.withOpacity(0.8), fontSize: 12),
+                    'avant coupure',
+                    style: AppTextStyles.caption.copyWith(
+                        color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
                   ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 20),
-          const CreditBar(value: AppData.creditPct),
+          CreditBar(value: dash.creditPct),
         ],
       ),
     );
   }
 
-  Widget _buildConsumptionChart() {
+  Widget _buildConsumptionChart(DashboardProvider dash) {
+    final data = dash.conso7j;
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -222,102 +274,145 @@ class DashboardScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const SectionTitle("Consommation — 7 jours"),
-              Text("kWh", style: AppTextStyles.caption.copyWith(fontSize: 12)),
+              const SectionTitle('Consommation — 7 jours'),
+              Text('kWh',
+                  style: AppTextStyles.caption.copyWith(fontSize: 12)),
             ],
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 180,
-            child: BarChart(
-              BarChartData(
-                maxY: 6,
-                alignment: BarChartAlignment.spaceAround,
-                barTouchData: BarTouchData(
-                  touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) => Colors.white,
-                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      return BarTooltipItem(
-                        "${rod.toY} kWh",
-                        AppTextStyles.body.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
-                      );
-                    },
-                  ),
+          if (dash.isLoading && data.isEmpty)
+            const SizedBox(
+              height: 180,
+              child: Center(
+                  child: CircularProgressIndicator(strokeWidth: 2)),
+            )
+          else if (data.isEmpty)
+            SizedBox(
+              height: 180,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.bar_chart_rounded,
+                        size: 40, color: Colors.grey.shade300),
+                    const SizedBox(height: 8),
+                    Text('Pas de données disponibles',
+                        style: AppTextStyles.caption
+                            .copyWith(color: AppColors.textSecondary)),
+                  ],
                 ),
-                titlesData: FlTitlesData(
-                  show: true,
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        final days = AppData.conso7j.map((e) => e['jour'] as String).toList();
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            days[value.toInt() % days.length],
-                            style: AppTextStyles.caption.copyWith(fontSize: 11),
-                          ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 180,
+              child: BarChart(
+                BarChartData(
+                  maxY: dash.maxConso7j,
+                  alignment: BarChartAlignment.spaceAround,
+                  barTouchData: BarTouchData(
+                    touchTooltipData: BarTouchTooltipData(
+                      getTooltipColor: (_) => Colors.white,
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        return BarTooltipItem(
+                          '${rod.toY.toStringAsFixed(2)} kWh',
+                          AppTextStyles.body.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold),
                         );
                       },
                     ),
                   ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 28,
-                      getTitlesWidget: (value, meta) {
-                        return Text("${value.toInt()}", style: AppTextStyles.caption.copyWith(fontSize: 10));
-                      },
+                  titlesData: FlTitlesData(
+                    show: true,
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          final idx = value.toInt();
+                          if (idx < 0 || idx >= data.length) {
+                            return const SizedBox.shrink();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              data[idx]['jour'] as String,
+                              style: AppTextStyles.caption
+                                  .copyWith(fontSize: 11),
+                            ),
+                          );
+                        },
+                      ),
                     ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 28,
+                        getTitlesWidget: (value, meta) {
+                          return Text('${value.toInt()}',
+                              style: AppTextStyles.caption
+                                  .copyWith(fontSize: 10));
+                        },
+                      ),
+                    ),
+                    topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
                   ),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                ),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  getDrawingHorizontalLine: (v) => const FlLine(color: Color(0xFFF1F5F9), strokeWidth: 1),
-                ),
-                borderData: FlBorderData(show: false),
-                barGroups: List.generate(AppData.conso7j.length, (i) {
-                  return BarChartGroupData(
-                    x: i,
-                    barRods: [
-                      BarChartRodData(
-                        toY: AppData.conso7j[i]['kwh'].toDouble(),
-                        gradient: AppColors.mainGradient,
-                        width: 20,
-                        borderRadius: const BorderRadius.only(topLeft: Radius.circular(6), topRight: Radius.circular(6)),
-                      ),
-                    ],
-                  );
-                }),
-                extraLinesData: ExtraLinesData(
-                  horizontalLines: [
-                    HorizontalLine(
-                      y: 3.08,
-                      color: AppColors.alertOrange,
-                      strokeWidth: 1.5,
-                      dashArray: [6, 4],
-                      label: HorizontalLineLabel(
-                        show: true,
-                        alignment: Alignment.topRight,
-                        style: const TextStyle(color: AppColors.alertOrange, fontSize: 10, fontWeight: FontWeight.bold),
-                        labelResolver: (_) => "Moy.",
-                      ),
-                    ),
-                  ],
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    getDrawingHorizontalLine: (v) => const FlLine(
+                        color: Color(0xFFF1F5F9), strokeWidth: 1),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  barGroups: List.generate(data.length, (i) {
+                    return BarChartGroupData(
+                      x: i,
+                      barRods: [
+                        BarChartRodData(
+                          toY: (data[i]['kwh'] as num).toDouble(),
+                          gradient: AppColors.mainGradient,
+                          width: 20,
+                          borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(6),
+                              topRight: Radius.circular(6)),
+                        ),
+                      ],
+                    );
+                  }),
+                  extraLinesData: dash.moyenneConso > 0
+                      ? ExtraLinesData(
+                          horizontalLines: [
+                            HorizontalLine(
+                              y: dash.moyenneConso,
+                              color: AppColors.alertOrange,
+                              strokeWidth: 1.5,
+                              dashArray: [6, 4],
+                              label: HorizontalLineLabel(
+                                show: true,
+                                alignment: Alignment.topRight,
+                                style: const TextStyle(
+                                    color: AppColors.alertOrange,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold),
+                                labelResolver: (_) => 'Moy.',
+                              ),
+                            ),
+                          ],
+                        )
+                      : const ExtraLinesData(),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildRecentAlerts(BuildContext context) {
-    final recentAlerts = AppData.alertes.where((a) => a['lue'] == false).take(3).toList();
+  Widget _buildDerniereLeture(DashboardProvider dash) {
+    final reading = dash.latestReading;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -329,21 +424,69 @@ class DashboardScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const SectionTitle("Alertes récentes"),
-              TextButton(
-                onPressed: () {
-                  // This would ideally switch the tab in HomeShell
-                },
-                child: Text(
-                  "Tout voir",
-                  style: AppTextStyles.body.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+              const SectionTitle('Dernière lecture'),
+              if (dash.isLoading && reading == null)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-              ),
             ],
           ),
-          ...recentAlerts.map((a) => AlerteItem(data: a, isCompact: true)),
+          const SizedBox(height: 12),
+          if (reading == null && !dash.isLoading)
+            Text(
+              'Aucune lecture enregistrée.',
+              style: AppTextStyles.body
+                  .copyWith(color: AppColors.textSecondary),
+            )
+          else if (reading != null) ...[
+            _readingRow(
+              Icons.bolt_rounded,
+              AppColors.primary,
+              'Valeur',
+              '${reading.valeur.toStringAsFixed(2)} kWh',
+            ),
+            const SizedBox(height: 8),
+            _readingRow(
+              Icons.schedule_rounded,
+              AppColors.secondary,
+              'Date',
+              reading.formattedDate,
+            ),
+            const SizedBox(height: 8),
+            _readingRow(
+              Icons.input_rounded,
+              AppColors.alertOrange,
+              'Source',
+              reading.source,
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _readingRow(
+      IconData icon, Color color, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 8),
+        Text('$label : ',
+            style: AppTextStyles.body
+                .copyWith(color: AppColors.textSecondary, fontSize: 13)),
+        Expanded(
+          child: Text(
+            value,
+            style: AppTextStyles.body.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+                fontSize: 13),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

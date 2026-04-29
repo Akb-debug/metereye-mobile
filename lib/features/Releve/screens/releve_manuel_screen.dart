@@ -3,22 +3,13 @@ import 'package:provider/provider.dart';
 
 import '../../../providers/auth_provider.dart';
 import '../../../theme/app_theme.dart';
+import '../../compteur/models/compteur_response.dart';
+import '../../compteur/providers/compteur_provider.dart';
 import '../providers/releve_providers.dart';
-import '../widgets/consommation_widget.dart';
 import '../widgets/error_message_widget.dart';
-import '../widgets/previous_value_widget.dart';
 
 class ReleveManuelScreen extends StatefulWidget {
-  final int compteurId;
-  final String compteurReference;
-  final double? valeurPrecedente;
-
-  const ReleveManuelScreen({
-    super.key,
-    required this.compteurId,
-    required this.compteurReference,
-    this.valeurPrecedente,
-  });
+  const ReleveManuelScreen({super.key});
 
   @override
   State<ReleveManuelScreen> createState() => _ReleveManuelScreenState();
@@ -29,6 +20,19 @@ class _ReleveManuelScreenState extends State<ReleveManuelScreen> {
   final _valeurController = TextEditingController();
   final _commentaireController = TextEditingController();
 
+  CompteurResponse? _selectedCompteur;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final token = context.read<AuthProvider>().token ?? '';
+      if (token.isNotEmpty) {
+        context.read<CompteurProvider>().chargerMesCompteurs(token: token);
+      }
+    });
+  }
+
   @override
   void dispose() {
     _valeurController.dispose();
@@ -37,12 +41,19 @@ class _ReleveManuelScreenState extends State<ReleveManuelScreen> {
   }
 
   Future<void> _soumettre() async {
+    if (_selectedCompteur == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez sélectionner un compteur.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     final token = context.read<AuthProvider>().token ?? '';
-    debugPrint('RELEVE SUBMIT — token vide: ${token.isEmpty}, compteurId: ${widget.compteurId}');
-
-    // Vérifications préventives avant tout appel réseau
     if (token.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -53,26 +64,14 @@ class _ReleveManuelScreenState extends State<ReleveManuelScreen> {
       return;
     }
 
-    if (widget.compteurId <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Aucun compteur sélectionné. Revenez sur le tableau de bord.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    final valeur = double.parse(_valeurController.text.trim().replaceAll(',', '.'));
+    final value = double.parse(_valeurController.text.trim().replaceAll(',', '.'));
+    final comment = _commentaireController.text.trim();
 
     final success = await context.read<ReleveProvider>().soumettreReleve(
           token: token,
-          compteurId: widget.compteurId,
-          valeur: valeur,
-          valeurPrecedente: widget.valeurPrecedente,
-          commentaire: _commentaireController.text.trim().isEmpty
-              ? null
-              : _commentaireController.text.trim(),
+          meterId: _selectedCompteur!.id,
+          value: value,
+          comment: comment.isEmpty ? null : comment,
         );
 
     if (success && mounted) {
@@ -88,7 +87,8 @@ class _ReleveManuelScreenState extends State<ReleveManuelScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<ReleveProvider>();
+    final compteurProvider = context.watch<CompteurProvider>();
+    final releveProvider = context.watch<ReleveProvider>();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F8),
@@ -105,48 +105,7 @@ class _ReleveManuelScreenState extends State<ReleveManuelScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── EN-TÊTE COMPTEUR ─────────────────────────────────────────────
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: AppColors.mainGradient,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.electric_meter_rounded,
-                        color: Colors.white, size: 32),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Saisie manuelle',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                          widget.compteurReference,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // ── VALEUR PRÉCÉDENTE ────────────────────────────────────────────
-              PreviousValueWidget(valeur: widget.valeurPrecedente),
-              if (widget.valeurPrecedente != null) const SizedBox(height: 16),
-
-              // ── CHAMP VALEUR ─────────────────────────────────────────────────
+              // ── SÉLECTION DU COMPTEUR ────────────────────────────────────
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -154,7 +113,126 @@ class _ReleveManuelScreenState extends State<ReleveManuelScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Compteur',
+                      style: AppTextStyles.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary),
+                    ),
+                    const SizedBox(height: 12),
+                    compteurProvider.isLoadingCompteurs
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(12),
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : compteurProvider.errorCompteurs != null
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Erreur : ${compteurProvider.errorCompteurs}',
+                                    style: AppTextStyles.body.copyWith(
+                                        color: Colors.red.shade700),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      final token = context
+                                              .read<AuthProvider>()
+                                              .token ??
+                                          '';
+                                      context
+                                          .read<CompteurProvider>()
+                                          .chargerMesCompteurs(token: token);
+                                    },
+                                    icon: const Icon(Icons.refresh_rounded),
+                                    label: const Text('Réessayer'),
+                                  ),
+                                ],
+                              )
+                        : compteurProvider.mesCompteurs.isEmpty
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Aucun compteur trouvé.',
+                                    style: AppTextStyles.body
+                                        .copyWith(color: AppColors.textSecondary),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      final token = context
+                                              .read<AuthProvider>()
+                                              .token ??
+                                          '';
+                                      context
+                                          .read<CompteurProvider>()
+                                          .chargerMesCompteurs(token: token);
+                                    },
+                                    icon: const Icon(Icons.refresh_rounded),
+                                    label: const Text('Réessayer'),
+                                  ),
+                                ],
+                              )
+                            : DropdownButtonFormField<CompteurResponse>(
+                                initialValue: _selectedCompteur,
+                                hint: const Text('Sélectionner un compteur'),
+                                isExpanded: true,
+                                decoration: InputDecoration(
+                                  prefixIcon: const Icon(
+                                      Icons.electric_meter_rounded,
+                                      color: AppColors.primary),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: AppColors.borderColor),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: AppColors.primary, width: 2),
+                                  ),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                ),
+                                items: compteurProvider.mesCompteurs
+                                    .map((c) => DropdownMenuItem(
+                                          value: c,
+                                          child: Text(
+                                            c.reference,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ))
+                                    .toList(),
+                                onChanged: (val) =>
+                                    setState(() => _selectedCompteur = val),
+                              ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── VALEUR RELEVÉE ───────────────────────────────────────────
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -186,8 +264,8 @@ class _ReleveManuelScreenState extends State<ReleveManuelScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              const BorderSide(color: AppColors.primary, width: 2),
+                          borderSide: const BorderSide(
+                              color: AppColors.primary, width: 2),
                         ),
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
@@ -196,36 +274,19 @@ class _ReleveManuelScreenState extends State<ReleveManuelScreen> {
                         if (val == null || val.trim().isEmpty) {
                           return 'La valeur est obligatoire';
                         }
-                        final v = double.tryParse(
-                            val.trim().replaceAll(',', '.'));
+                        final v =
+                            double.tryParse(val.trim().replaceAll(',', '.'));
                         if (v == null) return 'Entrez un nombre valide';
-                        if (v <= 0) return 'La valeur doit être positive';
-                        if (widget.valeurPrecedente != null &&
-                            v < widget.valeurPrecedente!) {
-                          return 'Valeur inférieure à la dernière lecture (${widget.valeurPrecedente})';
-                        }
+                        if (v < 0) return 'La valeur doit être positive ou nulle';
                         return null;
-                      },
-                      onChanged: (val) {
-                        final v = double.tryParse(
-                            val.trim().replaceAll(',', '.'));
-                        if (v != null) {
-                          context.read<ReleveProvider>().calculerConsommation(
-                              v, widget.valeurPrecedente);
-                        }
                       },
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
-              // ── CONSOMMATION ESTIMÉE ─────────────────────────────────────────
-              ConsommationWidget(consommation: provider.consommationEstimee),
-              if (provider.consommationEstimee != null)
-                const SizedBox(height: 12),
-
-              // ── COMMENTAIRE ──────────────────────────────────────────────────
+              // ── COMMENTAIRE ──────────────────────────────────────────────
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -233,7 +294,7 @@ class _ReleveManuelScreenState extends State<ReleveManuelScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -263,8 +324,8 @@ class _ReleveManuelScreenState extends State<ReleveManuelScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              const BorderSide(color: AppColors.primary, width: 2),
+                          borderSide: const BorderSide(
+                              color: AppColors.primary, width: 2),
                         ),
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
@@ -275,19 +336,20 @@ class _ReleveManuelScreenState extends State<ReleveManuelScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── MESSAGE D'ERREUR ─────────────────────────────────────────────
+              // ── ERREUR ───────────────────────────────────────────────────
               ErrorMessageWidget(
-                errorMessage: provider.errorMessage,
+                errorMessage: releveProvider.errorMessage,
                 onDismiss: () => context.read<ReleveProvider>().clearMessages(),
               ),
-              if (provider.errorMessage != null) const SizedBox(height: 16),
+              if (releveProvider.errorMessage != null)
+                const SizedBox(height: 16),
 
-              // ── BOUTON SOUMETTRE ─────────────────────────────────────────────
+              // ── BOUTON SOUMETTRE ─────────────────────────────────────────
               SizedBox(
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: provider.isLoading ? null : _soumettre,
+                  onPressed: releveProvider.isLoading ? null : _soumettre,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -295,7 +357,7 @@ class _ReleveManuelScreenState extends State<ReleveManuelScreen> {
                         borderRadius: BorderRadius.circular(14)),
                     elevation: 0,
                   ),
-                  child: provider.isLoading
+                  child: releveProvider.isLoading
                       ? const SizedBox(
                           width: 22,
                           height: 22,

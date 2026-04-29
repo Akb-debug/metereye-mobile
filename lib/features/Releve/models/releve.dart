@@ -27,17 +27,21 @@ class Releve {
 
   factory Releve.fromJson(Map<String, dynamic> json) {
     return Releve(
-      id: json['id'] as int,
-      valeur: (json['valeur'] as num).toDouble(),
-      dateTime: DateTime.parse(json['dateTime'] as String),
-      consommationCalculee: (json['consommationCalculee'] as num).toDouble(),
-      source: json['source'] as String,
-      statut: json['statut'] as String,
-      commentaire: json['commentaire'] as String?,
-      imageUrl: json['imageUrl'] as String?,
-      compteurId: json['compteurId'] as int,
-      compteurReference: json['compteurReference'] as String,
-      ocrConfidence: json['ocrConfidence'] as double?,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      valeur: ((json['valeur'] ?? json['value']) as num?)?.toDouble() ?? 0.0,
+      dateTime: json['dateTime'] != null
+          ? DateTime.tryParse(json['dateTime'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      consommationCalculee:
+          (json['consommationCalculee'] as num?)?.toDouble() ?? 0.0,
+      source: json['source']?.toString() ?? 'MANUEL',
+      statut: json['statut']?.toString() ?? 'VALIDE',
+      commentaire: (json['commentaire'] ?? json['comment'])?.toString(),
+      imageUrl: json['imageUrl']?.toString(),
+      compteurId: ((json['compteurId'] ?? json['meterId']) as num?)?.toInt() ?? 0,
+      compteurReference: (json['compteurReference'] ?? json['meterReference'] ?? '')
+          .toString(),
+      ocrConfidence: (json['ocrConfidence'] as num?)?.toDouble(),
     );
   }
 

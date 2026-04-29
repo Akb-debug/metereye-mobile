@@ -13,6 +13,11 @@ import 'features/compteur/services/compteur_service.dart';
 import 'features/Releve/providers/releve_providers.dart';
 import 'features/Releve/services/releve_service.dart';
 
+// Dashboard
+import 'providers/dashboard_provider.dart';
+import 'providers/historique_provider.dart';
+import 'services/meter_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -34,6 +39,12 @@ void main() async {
           create: (_) => ReleveProvider(
             service: ReleveService(),
           ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => DashboardProvider(service: MeterService()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => HistoriqueProvider(service: MeterService()),
         ),
       ],
       child: const MeterEyeApp(),
