@@ -1,3 +1,5 @@
+// 🔄 MODIFIÉ — meter_service.dart — ajouts : getUserProfile, getMyModule,
+//   updateSeuils, updateNotifications
 import 'dart:convert';
 import 'dart:io';
 
@@ -8,6 +10,8 @@ import '../config/app_config.dart';
 import '../models/consumption_response_model.dart';
 import '../models/consumption_stats_model.dart';
 import '../models/device_model.dart';
+import '../models/module_iot_model.dart';
+import '../models/user_profile_model.dart';
 import '../models/meter_model.dart';
 import '../models/paginated_readings_response.dart';
 import '../models/reading_model.dart';
@@ -45,13 +49,13 @@ class MeterService {
 
     switch (response.statusCode) {
       case 401:
-        return Exception('Session expir�e. Veuillez vous reconnecter.');
+        return Exception('Session expir�e. Veuillez vous reconnecter.');
       case 403:
-        return Exception('Acc�s non autoris�.');
+        return Exception('Acc�s non autoris�.');
       case 404:
-        return Exception('Ressource non trouv�e.');
+        return Exception('Ressource non trouv�e.');
       case 409:
-        return Exception('Conflit m�tier d�tect�.');
+        return Exception('Conflit m�tier d�tect�.');
       default:
         return Exception('Erreur HTTP ${response.statusCode}.');
     }
@@ -314,5 +318,72 @@ class MeterService {
       return ReadingModel.fromJson(json.decode(response.body));
     }
     throw _handleError(response);
+  }
+
+  /// GET /api/users/profile — retourne le profil complet de l'utilisateur connecté
+  Future<UserProfileModel> getUserProfile() async {
+    final headers = await _getHeaders();
+    final response =
+        await http.get(Uri.parse(AppConfig.profileUrl), headers: headers);
+    if (response.statusCode == 200) {
+      return UserProfileModel.fromJson(json.decode(response.body));
+    }
+    throw _handleError(response);
+  }
+
+  /// GET /api/devices/my — retourne le premier module actif de l'utilisateur
+  Future<ModuleIotModel?> getMyModule() async {
+    final headers = await _getHeaders();
+    final response =
+        await http.get(Uri.parse('$_devicesUrl/my'), headers: headers);
+    if (response.statusCode == 200) {
+      final List<dynamic> list = json.decode(response.body);
+      if (list.isEmpty) return null;
+      // Priorité au module actif, sinon premier de la liste
+      final actif = list.cast<Map<String, dynamic>>().firstWhere(
+            (d) => (d['statut']?.toString().toUpperCase() == 'ACTIF'),
+            orElse: () => list.first as Map<String, dynamic>,
+          );
+      return ModuleIotModel.fromJson(actif);
+    }
+    if (response.statusCode == 404) return null;
+    throw _handleError(response);
+  }
+
+  /// PUT /api/users/seuils — met à jour les seuils d'alerte de l'utilisateur
+  Future<void> updateSeuils({
+    required double seuilCredit,
+    required double seuilAnomalie,
+  }) async {
+    final headers = await _getHeaders();
+    final uri = Uri.parse('${AppConfig.baseUrl}/users/seuils').replace(
+      queryParameters: {
+        'seuilCredit': '$seuilCredit',
+        'seuilAnomalie': '$seuilAnomalie',
+      },
+    );
+    final response = await http.put(uri, headers: headers);
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw _handleError(response);
+    }
+  }
+
+  /// PUT /api/users/notifications — met à jour les préférences de notification
+  Future<void> updateNotifications({
+    bool? push,
+    bool? sms,
+    bool? email,
+  }) async {
+    final headers = await _getHeaders();
+    final params = <String, String>{};
+    if (push != null) params['push'] = '$push';
+    if (sms != null) params['sms'] = '$sms';
+    if (email != null) params['email'] = '$email';
+    final uri = Uri.parse('${AppConfig.baseUrl}/users/notifications')
+        .replace(queryParameters: params);
+    final response = await http.put(uri, headers: headers);
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw _handleError(response);
+    }
   }
 }

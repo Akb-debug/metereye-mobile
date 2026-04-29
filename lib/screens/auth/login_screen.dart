@@ -56,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                "Connectez-vous pour suivre votre consommation en temps réel.",
+                "Connectez-vous pour suivre votre consommation en temps rÃ©el.",
                 style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 32),
@@ -97,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 showToggle: true,
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) return "Le mot de passe est requis";
-                  if (val.length < 6) return "Minimum 6 caractères";
+                  if (val.length < 6) return "Minimum 6 caractÃ¨res";
                   return null;
                 },
               ),
@@ -107,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: TextButton(
                   onPressed: () {},
                   child: Text(
-                    "Mot de passe oublié ?",
+                    "Mot de passe oubliÃ© ?",
                     style: AppTextStyles.body.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w700,
