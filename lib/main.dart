@@ -9,6 +9,9 @@ import 'providers/auth_provider.dart';
 import 'features/compteur/providers/compteur_provider.dart';
 import 'features/compteur/services/compteur_service.dart';
 
+// 🔄 MODIFIÉ — main.dart — ajouts : ProfilProvider
+import 'providers/profil_provider.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -27,6 +30,9 @@ void main() async {
             service: CompteurService(),
           ),
         ),
+
+        // Provider profil dynamique
+        ChangeNotifierProvider(create: (_) => ProfilProvider()),
       ],
       child: const MeterEyeApp(),
     ),
