@@ -16,6 +16,7 @@ import 'features/Releve/services/releve_service.dart';
 // Dashboard
 import 'providers/dashboard_provider.dart';
 import 'providers/historique_provider.dart';
+import 'providers/profil_provider.dart';
 import 'services/meter_service.dart';
 
 void main() async {
@@ -45,6 +46,9 @@ void main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => HistoriqueProvider(service: MeterService()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ProfilProvider(service: MeterService()),
         ),
       ],
       child: const MeterEyeApp(),

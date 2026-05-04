@@ -9,16 +9,20 @@ import '../models/consumption_response_model.dart';
 import '../models/consumption_stats_model.dart';
 import '../models/device_model.dart';
 import '../models/meter_model.dart';
+import '../models/module_iot_model.dart';
 import '../models/paginated_readings_response.dart';
 import '../models/reading_model.dart';
 import '../models/reading_request_model.dart';
 import '../models/recharge_request_model.dart';
+import '../models/user_profile_model.dart';
 
 class MeterService {
   static const String _baseUrl = AppConfig.baseUrl;
   static const String _compteursUrl = '$_baseUrl/compteurs';
   static const String _readingsUrl = '$_baseUrl/readings';
   static const String _devicesUrl = '$_baseUrl/devices';
+  static const String _moduleDevicesUrl = '$_baseUrl/module-devices';
+  static const String _usersUrl = '$_baseUrl/users';
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -373,5 +377,82 @@ class MeterService {
       return ReadingModel.fromJson(json.decode(response.body));
     }
     throw _handleError(response);
+  }
+
+  /// GET /api/users/profile — retourne le profil complet de l'utilisateur connecté
+  Future<UserProfileModel> getUserProfile() async {
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$_usersUrl/profile'),
+      headers: headers,
+    );
+    if (response.statusCode == 200) {
+      final decoded = json.decode(response.body);
+      // BaseResponse<UserProfileDTO> → extraire le champ 'data'
+      final data = decoded is Map && decoded.containsKey('data') && decoded['data'] != null
+          ? decoded['data'] as Map<String, dynamic>
+          : decoded as Map<String, dynamic>;
+      return UserProfileModel.fromJson(data);
+    }
+    throw _handleError(response);
+  }
+
+  /// GET /api/module-devices/my — retourne le premier module actif de l'utilisateur, ou null
+  Future<ModuleIotModel?> getMyModule() async {
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('$_moduleDevicesUrl/my'),
+      headers: headers,
+    );
+    if (response.statusCode == 200) {
+      final decoded = json.decode(response.body);
+      final List<dynamic> list = decoded is List
+          ? decoded
+          : (decoded['data'] ?? decoded['content'] ?? []) as List<dynamic>;
+      if (list.isEmpty) return null;
+      // Préférer le premier module ACTIF, sinon le premier de la liste
+      final actif = list.cast<Map<String, dynamic>>().firstWhere(
+            (m) => m['statut']?.toString().toUpperCase() == 'ACTIF',
+            orElse: () => list.first as Map<String, dynamic>,
+          );
+      return ModuleIotModel.fromJson(actif);
+    }
+    if (response.statusCode == 404) return null;
+    throw _handleError(response);
+  }
+
+  /// PUT /api/users/seuils?seuilCredit=&seuilAnomalie= — met à jour les seuils d'alerte
+  Future<void> updateSeuils({
+    required double seuilCredit,
+    required double seuilAnomalie,
+  }) async {
+    final headers = await _getHeaders();
+    final uri = Uri.parse('$_usersUrl/seuils').replace(
+      queryParameters: {
+        'seuilCredit': '$seuilCredit',
+        'seuilAnomalie': '$seuilAnomalie',
+      },
+    );
+    final response = await http.put(uri, headers: headers);
+    if (response.statusCode != 200) throw _handleError(response);
+  }
+
+  /// PUT /api/users/notifications?push=&sms=&email= — met à jour les préférences de notification
+  /// Seuls les paramètres non-null sont envoyés (required=false côté backend)
+  Future<void> updateNotifications({
+    bool? push,
+    bool? sms,
+    bool? email,
+  }) async {
+    final headers = await _getHeaders();
+    final uri = Uri.parse('$_usersUrl/notifications').replace(
+      queryParameters: {
+        if (push != null) 'push': '$push',
+        if (sms != null) 'sms': '$sms',
+        if (email != null) 'email': '$email',
+      },
+    );
+    final response = await http.put(uri, headers: headers);
+    if (response.statusCode != 200) throw _handleError(response);
   }
 }
