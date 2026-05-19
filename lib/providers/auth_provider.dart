@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/error_translator.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
@@ -57,7 +58,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _errorMessage = ErrorTranslator.fromException(e);
       _isLoading = false;
       notifyListeners();
       return false;
@@ -97,7 +98,7 @@ class AuthProvider extends ChangeNotifier {
         return true; // Retourner true pour permettre la redirection
       }
     } catch (e) {
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _errorMessage = ErrorTranslator.fromException(e);
       _isLoading = false;
       notifyListeners();
       return false;
@@ -149,8 +150,14 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setError(String message) {
+    _errorMessage = message;
+    notifyListeners();
+  }
+
   void clearError() {
     _errorMessage = null;
     notifyListeners();
   }
 }
+

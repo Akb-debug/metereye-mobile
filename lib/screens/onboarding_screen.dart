@@ -68,26 +68,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               flex: 4,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
-                    _buildDots(),
-                    const SizedBox(height: 32),
-                    Text(
-                      _slides[_currentPage]['title'],
-                      style: AppTextStyles.heading1.copyWith(fontSize: 26),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      _slides[_currentPage]['desc'],
-                      style: AppTextStyles.body.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.5,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      _buildDots(),
+                      const SizedBox(height: 24),
+                      Text(
+                        _slides[_currentPage]['title'],
+                        style: AppTextStyles.heading1.copyWith(
+                            fontSize: 22),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      Text(
+                        _slides[_currentPage]['desc'],
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.textSecondary,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -1,10 +1,11 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_config.dart';
+import '../core/error_translator.dart';
 import '../models/consumption_response_model.dart';
 import '../models/consumption_stats_model.dart';
 import '../models/device_model.dart';
@@ -38,28 +39,8 @@ class MeterService {
     };
   }
 
-  Exception _handleError(http.Response response) {
-    try {
-      final errorData = json.decode(response.body);
-      final message = errorData['message']?.toString();
-      if (message != null && message.isNotEmpty) {
-        return Exception(message);
-      }
-    } catch (_) {}
-
-    switch (response.statusCode) {
-      case 401:
-        return Exception('Session expir�e. Veuillez vous reconnecter.');
-      case 403:
-        return Exception('Acc�s non autoris�.');
-      case 404:
-        return Exception('Ressource non trouv�e.');
-      case 409:
-        return Exception('Conflit m�tier d�tect�.');
-      default:
-        return Exception('Erreur HTTP ${response.statusCode}.');
-    }
-  }
+  Exception _handleError(http.Response response) =>
+      ErrorTranslator.fromResponse(response);
 
   Future<List<MeterModel>> getMesCompteurs() async {
     final headers = await _getHeaders();
@@ -84,10 +65,11 @@ class MeterService {
     );
     if (response.statusCode == 200) {
       final decoded = json.decode(response.body);
-      final data = decoded is Map && decoded.containsKey('data')
-          ? decoded['data'] as Map<String, dynamic>
-          : decoded as Map<String, dynamic>;
-      return ConsumptionStatsModel.fromJson(data);
+      final rawData = decoded is Map && decoded.containsKey('data')
+          ? decoded['data']
+          : decoded;
+      if (rawData == null) return ConsumptionStatsModel();
+      return ConsumptionStatsModel.fromJson(rawData as Map<String, dynamic>);
     }
     throw _handleError(response);
   }
@@ -125,7 +107,17 @@ class MeterService {
     );
     final response = await http.get(uri, headers: headers);
     if (response.statusCode == 200) {
-      return PaginatedReadingsResponse.fromJson(json.decode(response.body));
+      final decoded = json.decode(response.body);
+      // Gère BaseResponse<Page> {"data":{content:[...]}} et Page directe {content:[...]}
+      final Map<String, dynamic> data;
+      if (decoded is Map && decoded.containsKey('data') && decoded['data'] is Map) {
+        data = decoded['data'] as Map<String, dynamic>;
+      } else if (decoded is Map<String, dynamic>) {
+        data = decoded;
+      } else {
+        data = const {};
+      }
+      return PaginatedReadingsResponse.fromJson(data);
     }
     throw _handleError(response);
   }
@@ -177,7 +169,24 @@ class MeterService {
       }),
     );
     if (response.statusCode == 200) {
-      return MeterModel.fromJson(json.decode(response.body));
+      try {
+        return MeterModel.fromJson(json.decode(response.body));
+      } on FormatException {
+        // Le backend renvoie parfois du texte brut au lieu de JSON
+        // (ex: "Compteur X configuré en mode Y") — on crée un modèle minimal.
+        return MeterModel(
+          id: compteurId,
+          reference: '',
+          adresse: '',
+          typeCompteur: '',
+          valeurActuelle: 0,
+          statut: 'CONFIGURE',
+          modeLectureConfigure: modeLecture,
+          proprietaireEmail: '',
+          proprietaireId: 0,
+          actif: true,
+        );
+      }
     }
     throw _handleError(response);
   }
@@ -456,3 +465,5 @@ class MeterService {
     if (response.statusCode != 200) throw _handleError(response);
   }
 }
+
+

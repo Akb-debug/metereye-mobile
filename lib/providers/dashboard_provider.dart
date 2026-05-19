@@ -4,15 +4,30 @@ import '../models/consumption_stats_model.dart';
 import '../models/meter_model.dart';
 import '../models/reading_model.dart';
 import '../services/meter_service.dart';
+import 'data_sync_notifier.dart';
 
 class DashboardProvider extends ChangeNotifier {
   final MeterService _service;
+  final DataSyncNotifier? _sync;
 
-  DashboardProvider({MeterService? service}) : _service = service ?? MeterService();
+  DashboardProvider({MeterService? service, DataSyncNotifier? sync})
+      : _service = service ?? MeterService(),
+        _sync = sync {
+    sync?.addListener(_onReadingAdded);
+  }
+
+  void _onReadingAdded() => loadDashboard();
+
+  @override
+  void dispose() {
+    _sync?.removeListener(_onReadingAdded);
+    super.dispose();
+  }
 
   MeterModel? compteurActif;
   ConsumptionStatsModel? stats;
   ReadingModel? latestReading;
+  ReadingModel? previousReading;
   bool isLoading = false;
   String? error;
 
@@ -43,10 +58,15 @@ class DashboardProvider extends ChangeNotifier {
             .getLatestReading(actif.id)
             .then<Object?>((v) => v)
             .catchError((_) => null),
+        _service
+            .getReadingsByMeter(actif.id, page: 0, size: 2)
+            .then<Object?>((v) => v.content.length > 1 ? v.content[1] : null)
+            .catchError((_) => null),
       ]);
 
       stats = results[0] as ConsumptionStatsModel?;
       latestReading = results[1] as ReadingModel?;
+      previousReading = results[2] as ReadingModel?;
     } catch (e) {
       error = e.toString().replaceFirst('Exception: ', '');
     } finally {

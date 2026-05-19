@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../features/compteur/providers/compteur_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../theme/app_theme.dart';
+import 'dashboard_classique_screen.dart';
 import 'dashboard_screen.dart';
 import 'historique_screen.dart';
 import 'alertes_screen.dart';
@@ -30,7 +32,7 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   final List<Widget> _screens = const [
-    DashboardScreen(),
+    _DashboardRouterWidget(),
     HistoriqueScreen(),
     AlertesScreen(),
     ProfilScreen(),
@@ -68,6 +70,35 @@ class _HomeShellState extends State<HomeShell> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DashboardRouterWidget extends StatefulWidget {
+  const _DashboardRouterWidget();
+
+  @override
+  State<_DashboardRouterWidget> createState() => _DashboardRouterWidgetState();
+}
+
+class _DashboardRouterWidgetState extends State<_DashboardRouterWidget> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DashboardProvider>().loadDashboard();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<DashboardProvider>(
+      builder: (_, dash, __) {
+        if (dash.compteurActif?.isClassique == true) {
+          return const DashboardClassiqueScreen();
+        }
+        return const DashboardScreen();
+      },
     );
   }
 }

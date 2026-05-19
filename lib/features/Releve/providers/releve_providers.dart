@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
+import '../../../providers/data_sync_notifier.dart';
 import '../models/releve.dart';
 import '../services/releve_service.dart';
 
 class ReleveProvider extends ChangeNotifier {
   final ReleveService service;
+  final DataSyncNotifier? _sync;
 
-  ReleveProvider({required this.service});
+  ReleveProvider({required this.service, DataSyncNotifier? sync}) : _sync = sync;
 
   bool isLoading = false;
   String? errorMessage;
@@ -52,6 +54,7 @@ class ReleveProvider extends ChangeNotifier {
 
       releves.insert(0, releve);
       successMessage = 'Relevé ajouté avec succès';
+      _sync?.notifyReadingAdded();
       return true;
     } catch (e) {
       errorMessage = e.toString().replaceFirst('Exception: ', '');

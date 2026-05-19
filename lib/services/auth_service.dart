@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../config/app_config.dart';
+import '../core/error_translator.dart';
 import '../models/user_model.dart';
 
 class AuthService {
@@ -35,16 +36,8 @@ class AuthService {
       debugPrint('LOGIN RESPONSE: ${response.data}');
       return UserModel.fromJson(response.data);
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401) {
-        throw Exception('Email ou mot de passe incorrect');
-      }
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.connectionError ||
-          e.error is SocketException) {
-        throw Exception('Impossible de joindre le serveur.');
-      }
-      throw Exception(
-          e.response?.data?['message']?.toString() ?? 'Erreur serveur');
+      throw AppException(_dioMessage(e,
+          fallback401: 'Email ou mot de passe incorrect.'));
     }
   }
 
@@ -69,8 +62,34 @@ class AuthService {
         },
       );
     } on DioException catch (e) {
-      throw Exception(
-          e.response?.data?['message']?.toString() ?? 'Inscription impossible');
+      throw AppException(_dioMessage(e,
+          fallback401: 'Identifiants incorrects.'));
     }
   }
+
+  String _dioMessage(DioException e, {String? fallback401}) {
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.connectionError ||
+        e.error is SocketException) {
+      return 'Impossible de joindre le serveur. Vérifiez votre connexion internet.';
+    }
+    final code = e.response?.statusCode;
+    if (code == 401 && fallback401 != null) return fallback401;
+    final msg = e.response?.data is Map
+        ? e.response!.data['message']?.toString().trim()
+        : null;
+    if (msg != null && msg.isNotEmpty) return _capitalize(msg);
+    return switch (code) {
+      400 => 'Données incorrectes. Vérifiez le formulaire.',
+      401 => 'Session expirée. Veuillez vous reconnecter.',
+      403 => 'Accès refusé.',
+      404 => 'Ressource introuvable.',
+      409 => 'Un compte avec ces informations existe déjà.',
+      500 => 'Erreur serveur. Réessayez dans quelques instants.',
+      _ => 'Erreur de communication (code ${code ?? "?"})',
+    };
+  }
+
+  String _capitalize(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 }

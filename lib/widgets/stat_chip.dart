@@ -19,35 +19,41 @@ class StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sw = MediaQuery.sizeOf(context).width;
+    final pad = (sw * 0.034).clamp(10.0, 16.0);
+    final iconSize = (sw * 0.095).clamp(32.0, 44.0);
+
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(pad),
         decoration: AppTheme.cardDecoration,
         child: Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: iconSize,
+              height: iconSize,
               decoration: BoxDecoration(
                 color: iconBg,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: iconColor, size: 20),
+              child: Icon(icon, color: iconColor, size: iconSize * 0.5),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: pad * 0.75),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     value,
-                    style: AppTextStyles.heading2.copyWith(fontSize: 18),
+                    style: AppTextStyles.heading2.copyWith(
+                        fontSize: (sw * 0.042).clamp(14.0, 18.0)),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     label,
-                    style: AppTextStyles.caption.copyWith(fontSize: 11),
+                    style: AppTextStyles.caption.copyWith(
+                        fontSize: (sw * 0.026).clamp(9.0, 12.0)),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

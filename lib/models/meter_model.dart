@@ -37,7 +37,7 @@ class MeterModel {
       typeCompteur: json['typeCompteur']?.toString() ?? '',
       valeurActuelle: (json['valeurActuelle'] as num?)?.toDouble() ?? 0.0,
       statut: json['statut']?.toString() ?? 'EN_ATTENTE_CONFIGURATION',
-      modeLectureConfigure: json['modeLectureConfigure']?.toString(),
+      modeLectureConfigure: (json['modeLectureConfigure'] ?? json['modeLecture'])?.toString(),
       proprietaireEmail: proprietaire['email']?.toString() ?? '',
       proprietaireId: (proprietaire['id'] as num?)?.toInt() ?? 0,
       dateInitialisation: json['dateInitialisation'] != null

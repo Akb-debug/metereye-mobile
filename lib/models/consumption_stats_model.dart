@@ -52,9 +52,19 @@ class ConsumptionStatsModel {
 
   List<Map<String, dynamic>> get conso7j {
     if (consommationParJour.isEmpty) return [];
-    final entries = consommationParJour.entries.toList();
-    final last7 = entries.length > 7 ? entries.sublist(entries.length - 7) : entries;
     const jours = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+    // Trie par date croissante puis prend les 7 derniers
+    final sorted = consommationParJour.entries.toList()
+      ..sort((a, b) {
+        final da = DateTime.tryParse(a.key);
+        final db = DateTime.tryParse(b.key);
+        if (da == null || db == null) return 0;
+        return da.compareTo(db);
+      });
+
+    final last7 = sorted.length > 7 ? sorted.sublist(sorted.length - 7) : sorted;
+
     return last7.map((e) {
       final date = DateTime.tryParse(e.key);
       final label = date != null ? jours[date.weekday - 1] : e.key;

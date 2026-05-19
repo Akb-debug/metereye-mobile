@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -145,6 +146,86 @@ class CompteurService {
     } catch (e) {
       if (e is Exception) rethrow;
       throw Exception("Une erreur inattendue est survenue lors de la configuration du mode de lecture.");
+    }
+  }
+
+  /// POST /api/readings/upload — envoie une image (bytes) et retourne le relevé OCR.
+  Future<Map<String, dynamic>> uploadImageReading({
+    required String token,
+    required int meterId,
+    required Uint8List imageBytes,
+  }) async {
+    try {
+      final uri = Uri.parse('${AppConfig.baseUrl}/readings/upload');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers.addAll({'Authorization': 'Bearer $token', 'Accept': 'application/json'})
+        ..fields['meterId'] = '$meterId'
+        ..files.add(http.MultipartFile.fromBytes('file', imageBytes, filename: 'capture.jpg'));
+      final streamed = await client.send(request);
+      final response = await http.Response.fromStream(streamed);
+      debugPrint('uploadImageReading status=${response.statusCode}');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      throw Exception(_extractMessage(response));
+    } on http.ClientException {
+      throw Exception('Impossible de contacter le serveur.');
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception("Erreur lors de l'upload de l'image: $e");
+    }
+  }
+
+  /// Extrait l'userId (int) depuis le payload JWT sans vérifier la signature.
+  /// Cherche les claims : userId → id → sub (si numérique).
+  static int? extractUserIdFromToken(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+      final payload = base64Url.normalize(parts[1]);
+      final decoded = jsonDecode(utf8.decode(base64Url.decode(payload)))
+          as Map<String, dynamic>;
+      final raw = decoded['userId'] ?? decoded['id'] ?? decoded['sub'];
+      if (raw == null) return null;
+      if (raw is int) return raw;
+      return int.tryParse(raw.toString());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// POST /api/module-devices — crée et associe un module ESP32-CAM au compteur.
+  Future<void> createAndAssociateModuleEsp32({
+    required String token,
+    required int userId,
+    required int compteurId,
+    required String uuid,
+    required String ipAddress,
+    required String wifiSsid,
+    int captureInterval = 3600,
+  }) async {
+    try {
+      final response = await client.post(
+        Uri.parse(AppConfig.moduleDevicesUrl),
+        headers: _headers(token),
+        body: jsonEncode({
+          'userId': userId,
+          'compteurId': compteurId,
+          'uuid': uuid,
+          'ipAddress': ipAddress,
+          'wifiSsid': wifiSsid,
+          'captureInterval': captureInterval,
+        }),
+      );
+      debugPrint('createAndAssociateModuleEsp32 status=${response.statusCode}');
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception(_extractMessage(response));
+      }
+    } on http.ClientException {
+      throw Exception('Impossible de contacter le serveur.');
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception("Erreur lors de l'association du module ESP32: $e");
     }
   }
 

@@ -5,12 +5,27 @@ import 'package:flutter/foundation.dart';
 import '../models/consumption_stats_model.dart';
 import '../models/reading_model.dart';
 import '../services/meter_service.dart';
+import 'data_sync_notifier.dart';
 
 class HistoriqueProvider extends ChangeNotifier {
   final MeterService _service;
+  final DataSyncNotifier? _sync;
 
-  HistoriqueProvider({MeterService? service})
-      : _service = service ?? MeterService();
+  HistoriqueProvider({MeterService? service, DataSyncNotifier? sync})
+      : _service = service ?? MeterService(),
+        _sync = sync {
+    sync?.addListener(_onReadingAdded);
+  }
+
+  void _onReadingAdded() {
+    if (_lastCompteurId != null) loadHistorique(_lastCompteurId!);
+  }
+
+  @override
+  void dispose() {
+    _sync?.removeListener(_onReadingAdded);
+    super.dispose();
+  }
 
   String selectedPeriod = '30 jours';
   ConsumptionStatsModel? stats;
@@ -19,6 +34,7 @@ class HistoriqueProvider extends ChangeNotifier {
   bool isLoadingReleves = false;
   String? errorStats;
   String? errorReleves;
+  int? _lastCompteurId;
 
   static const Map<String, int> _periodDays = {
     '7 jours': 7,
@@ -28,6 +44,7 @@ class HistoriqueProvider extends ChangeNotifier {
 
   /// Charge stats et relevés en parallèle pour l'écran historique
   Future<void> loadHistorique(int compteurId) async {
+    _lastCompteurId = compteurId;
     await Future.wait([
       _loadStats(compteurId),
       _loadReleves(compteurId),

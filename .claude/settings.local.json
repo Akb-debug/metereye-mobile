@@ -1,7 +1,24 @@
 {
   "permissions": {
     "allow": [
-      "Bash(flutter analyze *)"
+      "Bash(flutter analyze *)",
+      "Bash(flutter pub *)",
+      "Bash(git -C \"c:/PPE302/metereye-mobile\" branch -a)",
+      "Bash(git -C \"c:/PPE302/metereye-mobile\" status --short)",
+      "Bash(Get-ChildItem -Path \"c:\\\\PPE302\\\\metereye-mobile\" -Recurse -Filter \"*.dart\")",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "Bash(Get-ChildItem \"C:\\\\PPE302\\\\esp32_cam\" -Recurse -Filter \"*.ino\",\"*.cpp\",\"*.h\")",
+      "Bash(Select-Object FullName)",
+      "Bash(mkdir -p \"C:\\\\PPE302\\\\esp32_cam\")",
+      "Bash(mkdir \"C:\\\\PPE302\\\\esp32_cam\")",
+      "Read(//c//**)",
+      "Bash(xargs grep -l \"iot/readings\\\\|IotReading\\\\|readings\")",
+      "PowerShell(Get-ChildItem \"C:\\\\PPE302\\\\MeterEye AI Backend\" -Recurse -Filter \"IoTReadingController.java\" | ForEach-Object { Get-Content $_.FullName })",
+      "PowerShell(Get-ChildItem \"C:\\\\PPE302\\\\MeterEye AI Backend\" -Recurse -Filter \"IoTReadingRequest.java\" | ForEach-Object { Get-Content $_.FullName })"
+    ],
+    "additionalDirectories": [
+      "C:\\PPE302"
     ]
   }
 }

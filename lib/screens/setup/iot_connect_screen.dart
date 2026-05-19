@@ -92,7 +92,7 @@ class _IotConnectScreenState extends State<IotConnectScreen> with TickerProvider
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.18),
+                color: AppColors.primary.withValues(alpha: 0.18),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.wifi_tethering_rounded, size: 32, color: AppColors.primary),
@@ -125,7 +125,7 @@ class _IotConnectScreenState extends State<IotConnectScreen> with TickerProvider
           width: size * (1 + _pulseController.value * 0.1),
           height: size * (1 + _pulseController.value * 0.1),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(opacity * (1 - _pulseController.value)),
+            color: AppColors.primary.withValues(alpha: opacity * (1 - _pulseController.value)),
             shape: BoxShape.circle,
           ),
         );
@@ -134,9 +134,11 @@ class _IotConnectScreenState extends State<IotConnectScreen> with TickerProvider
   }
 
   Widget _buildFound() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 8),
         ScaleTransition(
           scale: const AlwaysStoppedAnimation(1.0),
           child: Container(
@@ -175,7 +177,9 @@ class _IotConnectScreenState extends State<IotConnectScreen> with TickerProvider
           style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 54)),
           child: const Text("Tester la lecture du compteur →"),
         ),
+        const SizedBox(height: 8),
       ],
+      ),
     );
   }
 
@@ -216,7 +220,7 @@ class _IotConnectScreenState extends State<IotConnectScreen> with TickerProvider
                           child: Container(
                             width: 200,
                             height: 2,
-                            color: AppColors.secondary.withOpacity(0.8),
+                            color: AppColors.secondary.withValues(alpha: 0.8),
                           ),
                         );
                       },

@@ -1,37 +1,49 @@
+// 🔄 MODIFIÉ — alerte_item.dart — source de données : Map<String,dynamic> → AlerteModel
+//              Rendu visuel inchangé au pixel près
+
 import 'package:flutter/material.dart';
+import '../features/alertes/models/alerte_model.dart';
 import '../theme/app_theme.dart';
 
 class AlerteItem extends StatelessWidget {
-  final Map<String, dynamic> data;
+  final AlerteModel alerte;
   final bool isCompact;
 
   const AlerteItem({
     super.key,
-    required this.data,
+    required this.alerte,
     this.isCompact = false,
   });
 
   IconData _getIcon() {
-    switch (data['type']) {
-      case 'urgent': return Icons.warning_rounded;
-      case 'warning': return Icons.info_rounded;
-      case 'success': return Icons.check_circle_rounded;
-      default: return Icons.notifications_rounded;
+    switch (alerte.type) {
+      case 'urgent':
+        return Icons.warning_rounded;
+      case 'warning':
+        return Icons.info_rounded;
+      case 'success':
+        return Icons.check_circle_rounded;
+      default:
+        return Icons.notifications_rounded;
     }
   }
 
   Color _getColor() {
-    switch (data['type']) {
-      case 'urgent': return AppColors.alertRed;
-      case 'warning': return AppColors.alertOrange;
-      case 'success': return AppColors.alertGreen;
-      default: return AppColors.primary;
+    switch (alerte.type) {
+      case 'urgent':
+        return AppColors.alertRed;
+      case 'warning':
+        return AppColors.alertOrange;
+      case 'success':
+        return AppColors.alertGreen;
+      default:
+        return AppColors.primary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool lue = data['lue'] ?? false;
+    final bool lue = alerte.lue;
     final Color color = _getColor();
 
     return Container(
@@ -48,7 +60,7 @@ class AlerteItem extends StatelessWidget {
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           )
@@ -62,7 +74,7 @@ class AlerteItem extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(_getIcon(), color: color, size: 24),
@@ -77,21 +89,22 @@ class AlerteItem extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          data['titre'],
-                          style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700),
+                          alerte.titre,
+                          style: AppTextStyles.body
+                              .copyWith(fontWeight: FontWeight.w700),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Text(
-                        data['heure'],
+                        alerte.heureFormatted,
                         style: AppTextStyles.caption.copyWith(fontSize: 10),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    data['desc'],
+                    alerte.message,
                     style: AppTextStyles.caption.copyWith(height: 1.3),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

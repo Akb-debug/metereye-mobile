@@ -1,9 +1,9 @@
-// 🔄 MODIFIÉ — historique_screen.dart — ajouts : Consumer<HistoriqueProvider>, initState, données dynamiques
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 
 import '../../theme/app_theme.dart';
+import '../../theme/responsive_utils.dart';
 import '../../widgets/section_title.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/historique_provider.dart';
@@ -16,14 +16,33 @@ class HistoriqueScreen extends StatefulWidget {
 }
 
 class _HistoriqueScreenState extends State<HistoriqueScreen> {
+  DashboardProvider? _dashboardProvider;
+  int? _loadedCompteurId;
+
+  void _onDashboardChange() {
+    if (!mounted) return;
+    final compteurId = _dashboardProvider?.compteurActif?.id;
+    if (compteurId != null && compteurId != _loadedCompteurId) {
+      _loadedCompteurId = compteurId;
+      context.read<HistoriqueProvider>().loadHistorique(compteurId);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final compteurId =
-          context.read<DashboardProvider>().compteurActif?.id ?? 0;
-      context.read<HistoriqueProvider>().loadHistorique(compteurId);
+      if (!mounted) return;
+      _dashboardProvider = context.read<DashboardProvider>();
+      _dashboardProvider!.addListener(_onDashboardChange);
+      _onDashboardChange();
     });
+  }
+
+  @override
+  void dispose() {
+    _dashboardProvider?.removeListener(_onDashboardChange);
+    super.dispose();
   }
 
   @override
@@ -34,21 +53,27 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
             context.read<DashboardProvider>().compteurActif?.id ?? 0;
         return Scaffold(
           appBar: AppBar(
-            title: const Text("Historique"),
+            title: const Text('Historique'),
             backgroundColor: AppColors.background,
           ),
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildPeriodSelector(historique, compteurId),
-                _buildSummaryCard(historique),
-                _buildLineChart(historique),
-                _buildAIAnalysis(),
-                _buildLastLectures(historique),
-                if (historique.error != null)
-                  _buildErrorBanner(historique, compteurId),
-                const SizedBox(height: 24),
-              ],
+          body: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildPeriodSelector(historique, compteurId),
+                    _buildSummaryCard(historique),
+                    _buildLineChart(historique),
+                    _buildAIAnalysis(),
+                    _buildLastLectures(historique),
+                    if (historique.error != null)
+                      _buildErrorBanner(historique, compteurId),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
             ),
           ),
         );
@@ -57,9 +82,10 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
   }
 
   Widget _buildPeriodSelector(HistoriqueProvider historique, int compteurId) {
-    final periods = ["7 jours", "30 jours", "3 mois"];
+    final periods = ['7 jours', '30 jours', '3 mois'];
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(
+          horizontal: context.hPad, vertical: 8),
       child: Row(
         children: periods.map((p) {
           final isSelected = historique.selectedPeriod == p;
@@ -95,26 +121,34 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
   }
 
   Widget _buildSummaryCard(HistoriqueProvider historique) {
+    final sw = context.sw;
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: EdgeInsets.all(context.hPad),
       padding: const EdgeInsets.all(20),
       decoration: AppTheme.cardDecoration,
       child: historique.isLoadingStats
           ? Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(3, (_) => _skeletonBox(48, 64)),
+              children: List.generate(
+                  3, (_) => _skeletonBox(48, (sw * 0.16).clamp(48.0, 80.0))),
             )
           : Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _summaryItem("Total consommé",
-                    historique.totalConsommeFormatted, AppColors.secondary),
+                Expanded(
+                  child: _summaryItem('Total consommé',
+                      historique.totalConsommeFormatted, AppColors.secondary),
+                ),
                 _verticalDivider(),
-                _summaryItem("Variation",
-                    historique.variationFormatted, AppColors.secondary),
+                Expanded(
+                  child: _summaryItem('Variation',
+                      historique.variationFormatted, AppColors.secondary),
+                ),
                 _verticalDivider(),
-                _summaryItem(
-                    "Moy./jour", historique.moyenneFormatted, AppColors.primary),
+                Expanded(
+                  child: _summaryItem('Moy./jour',
+                      historique.moyenneFormatted, AppColors.primary),
+                ),
               ],
             ),
     );
@@ -123,11 +157,16 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
   Widget _summaryItem(String label, String value, Color color) {
     return Column(
       children: [
-        Text(value,
-            style:
-                AppTextStyles.heading2.copyWith(color: color, fontSize: 18)),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(value,
+              style: AppTextStyles.heading2.copyWith(
+                  color: color, fontSize: 18)),
+        ),
         const SizedBox(height: 4),
-        Text(label, style: AppTextStyles.caption.copyWith(fontSize: 10)),
+        Text(label,
+            style: AppTextStyles.caption.copyWith(fontSize: 10),
+            textAlign: TextAlign.center),
       ],
     );
   }
@@ -145,26 +184,29 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
       );
 
   Widget _buildLineChart(HistoriqueProvider historique) {
+    final chartHeight = context.chartH;
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: EdgeInsets.symmetric(
+          horizontal: context.hPad, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: AppTheme.cardDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionTitle("Évolution du crédit"),
-          Text("Unités lues sur le compteur",
+          const SectionTitle('Évolution du crédit'),
+          Text('Unités lues sur le compteur',
               style: AppTextStyles.caption.copyWith(fontSize: 12)),
           const SizedBox(height: 24),
           if (historique.isLoadingReleves)
-            const SizedBox(
-              height: 220,
-              child:
-                  Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            SizedBox(
+              height: chartHeight,
+              child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2)),
             )
           else if (historique.releves.isEmpty)
             SizedBox(
-              height: 220,
+              height: chartHeight,
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -181,7 +223,7 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
             )
           else
             SizedBox(
-              height: 220,
+              height: chartHeight,
               child: LineChart(
                 LineChartData(
                   minY: historique.minYChart,
@@ -223,7 +265,7 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                         showTitles: true,
                         reservedSize: 40,
                         getTitlesWidget: (value, meta) => Text(
-                          "${value.toInt()}",
+                          '${value.toInt()}',
                           style: AppTextStyles.caption.copyWith(fontSize: 9),
                         ),
                       ),
@@ -260,8 +302,8 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                         show: true,
                         gradient: LinearGradient(
                           colors: [
-                            AppColors.primary.withValues(alpha:0.2),
-                            AppColors.primary.withValues(alpha:0.0),
+                            AppColors.primary.withValues(alpha: 0.2),
+                            AppColors.primary.withValues(alpha: 0.0),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -280,7 +322,7 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                               ? labels[idx]
                               : '';
                           return LineTooltipItem(
-                            "${s.y.toInt()} u\n$label",
+                            '${s.y.toInt()} u\n$label',
                             AppTextStyles.body.copyWith(
                                 fontWeight: FontWeight.bold, fontSize: 12),
                           );
@@ -296,10 +338,9 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     );
   }
 
-  // Section statique — pas dynamiser dans ce sprint
   Widget _buildAIAnalysis() {
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: EdgeInsets.all(context.hPad),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -317,24 +358,26 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha:0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle),
                 child: const Icon(Icons.auto_awesome_rounded,
                     color: AppColors.primary, size: 22),
               ),
               const SizedBox(width: 12),
-              Text("Analyse MeterEye AI",
-                  style: AppTextStyles.heading2
-                      .copyWith(color: AppColors.primary)),
+              Expanded(
+                child: Text('Analyse MeterEye AI',
+                    style: AppTextStyles.heading2
+                        .copyWith(color: AppColors.primary)),
+              ),
             ],
           ),
           const SizedBox(height: 16),
           _insightRow(Icons.trending_down,
-              "Votre crédit baisse de 155 unités/jour en moyenne"),
+              'Votre crédit baisse de 155 unités/jour en moyenne'),
           _insightRow(Icons.access_time,
-              "Pics de consommation entre 18h et 22h chaque soir"),
+              'Pics de consommation entre 18h et 22h chaque soir'),
           _insightRow(Icons.check_circle_outline,
-              "Vous consommez moins que la semaine dernière (−8%)"),
+              'Vous consommez moins que la semaine dernière (−8%)'),
         ],
       ),
     );
@@ -345,7 +388,8 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppColors.primary.withValues(alpha:0.7)),
+          Icon(icon,
+              size: 18, color: AppColors.primary.withValues(alpha: 0.7)),
           const SizedBox(width: 12),
           Expanded(
               child: Text(text,
@@ -356,14 +400,15 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
   }
 
   Widget _buildLastLectures(HistoriqueProvider historique) {
+    final sw = context.sw;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: context.hPad),
       padding: const EdgeInsets.all(16),
       decoration: AppTheme.cardDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionTitle("Dernières lectures"),
+          const SectionTitle('Dernières lectures'),
           if (historique.isLoadingReleves)
             ListView.separated(
               shrinkWrap: true,
@@ -377,16 +422,17 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                   children: [
                     _skeletonBox(40, 40),
                     const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _skeletonBox(12, 100),
-                        const SizedBox(height: 4),
-                        _skeletonBox(10, 70),
-                      ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _skeletonBox(12, (sw * 0.25).clamp(60.0, 120.0)),
+                          const SizedBox(height: 4),
+                          _skeletonBox(10, (sw * 0.18).clamp(48.0, 90.0)),
+                        ],
+                      ),
                     ),
-                    const Spacer(),
-                    _skeletonBox(18, 40),
+                    _skeletonBox(18, (sw * 0.1).clamp(32.0, 56.0)),
                   ],
                 ),
               ),
@@ -425,26 +471,27 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                             color: AppColors.primary, size: 20),
                       ),
                       const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(lecture.formattedDate,
-                              style: AppTextStyles.body
-                                  .copyWith(fontWeight: FontWeight.bold)),
-                          Text(lecture.sourceLabel,
-                              style: AppTextStyles.caption),
-                        ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(lecture.formattedDate,
+                                style: AppTextStyles.body.copyWith(
+                                    fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis),
+                            Text(lecture.sourceLabel,
+                                style: AppTextStyles.caption),
+                          ],
+                        ),
                       ),
-                      const Spacer(),
                       Text(
-                        "${lecture.valeur.toInt()}",
+                        '${lecture.valeur.toInt()}',
                         style: AppTextStyles.heading2.copyWith(
                             color: AppColors.primary, fontSize: 16),
                       ),
-                      const SizedBox(width: 2),
-                      Text(" u",
-                          style:
-                              AppTextStyles.caption.copyWith(fontSize: 12)),
+                      Text(' u',
+                          style: AppTextStyles.caption
+                              .copyWith(fontSize: 12)),
                     ],
                   ),
                 );
@@ -457,7 +504,8 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
 
   Widget _buildErrorBanner(HistoriqueProvider historique, int compteurId) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: EdgeInsets.symmetric(
+          horizontal: context.hPad, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.red.shade50,

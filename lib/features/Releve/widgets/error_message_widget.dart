@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/app_theme.dart';
 
 class ErrorMessageWidget extends StatelessWidget {
   final String? errorMessage;
@@ -17,36 +18,45 @@ class ErrorMessageWidget extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.red[50],
-        border: Border.all(color: Colors.red[200]!),
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFFFFF1F2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFCA5A5)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.error_outline,
-            color: Colors.red[700],
-            size: 20,
+          Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFE4E4),
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: const Icon(
+              Icons.error_outline_rounded,
+              color: AppColors.alertRed,
+              size: 16,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               errorMessage!,
-              style: TextStyle(
+              style: AppTextStyles.body.copyWith(
+                color: const Color(0xFF991B1B),
                 fontSize: 13,
-                color: Colors.red[700],
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
           if (onDismiss != null)
             GestureDetector(
               onTap: onDismiss,
-              child: Icon(
-                Icons.close,
-                color: Colors.red[700],
-                size: 20,
+              child: const Icon(
+                Icons.close_rounded,
+                color: Color(0xFF991B1B),
+                size: 18,
               ),
             ),
         ],
